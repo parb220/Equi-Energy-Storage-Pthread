@@ -186,6 +186,8 @@ void *burn_simulation(void *node_void)
 	bool not_check_yet = true;  
 	for (int n=0; n<SIMULATION_LENGTH; n++)
 	{
+		if ( (n%MH_TRACKING_FREQUENCY) == 0)
+			simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, 0.22, 0.32); 
 		simulator->draw(); 
 		if (id >0 && not_check_yet && simulator->EnergyRingBuildDone())
 		{
