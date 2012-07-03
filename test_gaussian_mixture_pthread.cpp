@@ -91,16 +91,6 @@ int main()
 	/*  Generate K CEES_Pthread objects */
 	CEES_Pthread *simulator = new CEES_Pthread[CEES_Pthread::GetEnergyLevelNumber()]; 
 	double *sigma = new double[CEES_Pthread::GetDataDimension()];
-	/* Uniform distribution in [0, 1]^2 used for initialization. */
-	double *lB = new double [CEES_Pthread::GetDataDimension()]; 
-	double *uB = new double [CEES_Pthread::GetDataDimension()]; 
-	for (int i=0; i<CEES_Pthread::GetDataDimension(); i++)
-	{
-		lB[i] = 0.0; 
-		uB[i] = 1.0; 
-	}
-	/* Uniform distribution */
-	CModel *initial_model = new CUniformModel(CEES_Pthread::GetDataDimension(), lB, uB); 
 	for (int i=0; i<CEES_Pthread::GetEnergyLevelNumber(); i++)
 	{
 		simulator[i].SetID_LocalTarget(i);
@@ -119,12 +109,7 @@ int main()
                 for (int j=0; j<CEES_Pthread::GetDataDimension(); j++)
                         sigma[j] = 0.25 * sqrt(simulator[i].GetTemperature());
                 simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetDataDimension(), sigma));
-		/*   Initialize       */
-		simulator[i].Initialize(initial_model); 
 	}
-	delete initial_model;
-	delete [] lB; 
-	delete [] uB; 
 	delete [] sigma; 
 
 	/* Pthread */
@@ -180,6 +165,23 @@ void *burn_simulation(void *node_void)
 		CEES_Pthread::mutex_lock(id);
 		CEES_Pthread::condition_wait(id); 
 		CEES_Pthread::mutex_unlock(id);
+		simulator->Initialize(); 
+	}
+	else
+	{
+		/* Uniform distribution in [0, 1]^2 used for initialization. */
+		double *lB = new double [CEES_Pthread::GetDataDimension()]; 
+		double *uB = new double [CEES_Pthread::GetDataDimension()]; 
+		for (int i=0; i<CEES_Pthread::GetDataDimension(); i++)
+		{
+			lB[i] = 0.0; 
+			uB[i] = 1.0; 
+		}
+		CModel *initial_model = new CUniformModel(CEES_Pthread::GetDataDimension(), lB, uB); 
+		simulator->Initialize(initial_model); 
+		delete initial_model;
+		delete [] lB; 
+		delete [] uB; 
 	}	
 	bool not_check_yet = true;  
 	for (int n=0; n<SIMULATION_LENGTH; n++)
