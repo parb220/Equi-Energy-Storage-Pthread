@@ -1,5 +1,5 @@
-SOURCES = CEES_Pthread.cpp CStorageHeadPthread.cpp test_gaussian_mixture_pthread.cpp 
-OBJS = CEES_Pthread.o CStorageHeadPthread.o test_gaussian_mixture_pthread.o
+SOURCES = CEES_Pthread.cpp CStorageHeadPthread.cpp test_gaussian_mixture_pthread.cpp TuneEnergyLevlesUpdateStorage.cpp
+OBJS = CEES_Pthread.o CStorageHeadPthread.o test_gaussian_mixture_pthread.o TuneEnergyLevlesUpdateStorage.o
 EXECUTABLE = test_gaussian_mixture_pthread
 
 CPP = g++

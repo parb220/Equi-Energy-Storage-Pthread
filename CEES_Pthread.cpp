@@ -71,3 +71,23 @@ void CEES_Pthread::SetHigherNodePointer(const CEES_Pthread *next)
 {
 	CEES_Node::SetHigherNodePointer((CEES_Node *)next);
 }
+
+void CEES_Pthread::UpdateMinEnergy(double _new_energy)
+{
+	pthread_mutex_t *local_mutex = new pthread_mutex_t; 
+	pthread_mutex_init(local_mutex, NULL); 
+	pthread_mutex_lock(local_mutex); 
+	if (_new_energy < min_energy)
+        {
+                min_energy = _new_energy;
+                if (min_energy < H[0])
+                        if_tune_energy_level = true;
+        }
+	pthread_mutex_unlock(local_mutex); 
+	pthread_mutex_destroy(local_mutex); 
+}
+
+void CEES_Pthread::AssignSamplesGeneratedSoFar()
+{
+	CEES_Node::AssignSamplesGeneratedSoFar((CStorageHead &)(*storage)); 
+}

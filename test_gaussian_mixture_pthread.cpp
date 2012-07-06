@@ -38,10 +38,9 @@
 using namespace std;
 
 bool Configure_GaussianMixtureModel_File(CMixtureModel &, const string); 
-void *burn_simulation(void*);
-
-/* Initialize an equi_energy object for sampling */
-
+void *initialize(void*);
+void *simulation(void*); 
+void TuneEnergyLevels_UpdateStorage(CEES_Pthread *); 
 int main()
 {
 	/*
@@ -64,6 +63,7 @@ int main()
 	CEES_Pthread::SetDepositFreq(DEPOSIT_FREQUENCY); 		// Frequency of deposit
 	CEES_Pthread::ultimate_target = &target;	
 	CEES_Pthread::SetEnergyLevels_GeometricProgression(H0, HK_1);
+	CEES_Pthread::InitializeMinEnergy(); 				// For tuning energy levels based on newly identified min_energy 
 	CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C);
 	CEES_Pthread::SetPthreadParameters(NUMBER_ENERGY_LEVEL);	// Pthread condition and mutex
  
@@ -114,21 +114,53 @@ int main()
 
 	/* Pthread */
 	pthread_t *thread = new pthread_t[CEES_Pthread::GetEnergyLevelNumber()];
-	int *thread_id = new int[CEES_Pthread::GetEnergyLevelNumber()]; 
-	
+
+	/* Initializing */
 	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)	
-		// multi-core version: 
-	{
-		thread_id[i] = pthread_create(&(thread[i]), NULL, burn_simulation, (void*)(simulator+i));
-		if (thread_id[i])
-			cout << "error in creating a thread: " << i << endl;  
-	}
+		pthread_create(&(thread[i]), NULL, initialize, (void*)(simulator+i));
 
 	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+		pthread_join(thread[i], NULL);
+
+	/* simulation */
+	if (!IF_ENERGY_LEVEL_TUNING)
 	{
-		if (pthread_join(thread[i], NULL))
-			cout << "error in joining a thread: " << i << endl; 
+		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                {
+			simulator[i].simulationL = SIMULATION_LENGTH; 
+			pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+		}
+		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+			pthread_join(thread[i], NULL);
 	}
+	else 
+	{
+		int nEnergyLevelTuning = 0; 
+		while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
+		{
+			for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                	{
+				simulator[i].simulationL = ENERGY_LEVEL_TUNING_FREQUENCY;
+				pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+			}
+                	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                        	pthread_join(thread[i], NULL);
+			if (CEES_Pthread::IfTuneEnergyLevel())
+				TuneEnergyLevels_UpdateStorage(simulator); 
+			nEnergyLevelTuning ++;
+		}
+		if (SIMULATION_LENGTH - ENERGY_LEVEL_TUNING_MAX_TIME*ENERGY_LEVEL_TUNING_FREQUENCY > 0)
+		{
+			for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                        {
+                                simulator[i].simulationL = SIMULATION_LENGTH - ENERGY_LEVEL_TUNING_MAX_TIME*ENERGY_LEVEL_TUNING_FREQUENCY;
+                                pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+                        }
+                        for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                                pthread_join(thread[i], NULL);
+		}
+	}
+
 	
 	storage.finalize(); 		// save to hard-disk of those unsaved data
 
@@ -147,20 +179,19 @@ int main()
 	oFile.close(); 
 	
 	/* Release dynamically allocated space */
-	delete [] thread_id; 
 	delete [] thread; 
 	delete [] simulator; 
 	/* Release random number generator */
 	gsl_rng_free(r); 
 }
 
-void *burn_simulation(void *node_void)
+void *initialize(void *node_void)
 {
 	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
 	int id = simulator->GetID(); 
 
 	/* Wait till the next-level's initial ring is built up */
-	if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
+	if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
 	{
 		CEES_Pthread::mutex_lock(id);
 		CEES_Pthread::condition_wait(id); 
@@ -182,21 +213,29 @@ void *burn_simulation(void *node_void)
 		delete initial_model;
 		delete [] lB; 
 		delete [] uB; 
-	}	
+	}
+
 	bool not_check_yet = true;  
-	for (int n=0; n<SIMULATION_LENGTH; n++)
+	while (!simulator->EnergyRingBuildDone())
+		simulator->draw();
+	if (id >0 && not_check_yet)
+       	{
+		not_check_yet = false;
+               	/* Signal the previous level to start */
+                CEES_Pthread::mutex_lock(id-1);
+                CEES_Pthread::condition_signal(id-1);
+                CEES_Pthread::mutex_unlock(id-1);
+	}
+}
+
+void *simulation(void *node_void)
+{
+	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
+	for (int n=0; n<simulator->simulationL; n++)
 	{
-		if ( (n%MH_TRACKING_FREQUENCY) == 0)
+		if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
 			simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, 0.22, 0.32); 
 		simulator->draw(); 
-		if (id >0 && not_check_yet && simulator->EnergyRingBuildDone())
-		{
-			not_check_yet = false; 
-			/* Signal the previous level to start */
-			CEES_Pthread::mutex_lock(id-1); 
-			CEES_Pthread::condition_signal(id-1);  
-			CEES_Pthread::mutex_unlock(id-1); 
-		}
 	}
 } 
 
