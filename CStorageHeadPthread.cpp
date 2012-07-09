@@ -27,19 +27,20 @@ int CStorageHeadPthread::DepositSample(int _bin_index, const double *_x, int _di
 	return return_value; 
 }
 
-CSampleIDWeight CStorageHeadPthread::DrawSample(int _bin_index, const gsl_rng *r)
+bool CStorageHeadPthread::DrawSample(int _bin_index, const gsl_rng *r, CSampleIDWeight &sample)
 {
 	pthread_mutex_lock(&(mutex[_bin_index])); 
-	CSampleIDWeight sample=CStorageHead::DrawSample(_bin_index, r); 
+	bool if_success=CStorageHead::DrawSample(_bin_index, r, sample); 
 	pthread_mutex_unlock(&(mutex[_bin_index])); 
-	return sample;
+	return if_success;
 }
 
-void CStorageHeadPthread::DrawSample(int _bin_index, double *_x, int _dim, int & _id, double & _weight, const gsl_rng *r)
+bool CStorageHeadPthread::DrawSample(int _bin_index, double *_x, int _dim, int & _id, double & _weight, const gsl_rng *r)
 {
 	pthread_mutex_lock(&(mutex[_bin_index])); 
-	CStorageHead::DrawSample(_bin_index, _x, _dim, _id, _weight, r); 
+	bool if_success = CStorageHead::DrawSample(_bin_index, _x, _dim, _id, _weight, r); 
 	pthread_mutex_unlock(&(mutex[_bin_index])); 
+	return if_success; 
 }
 
 vector <CSampleIDWeight> CStorageHeadPthread::RetrieveSamplesSequentially(bool if_clear_old_bin, int bin_id)

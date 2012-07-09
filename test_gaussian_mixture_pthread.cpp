@@ -47,7 +47,7 @@ int main()
  	Initialize the target distribution as a Gaussian mixture model;
 	Mean Sigma and Weight are stored in files
   	*/
-	string filename_base = "../equi_energy_generic/gaussian_mixture_model."; 
+	string filename_base = "./gaussian_mixture_model."; //"../equi_energy_generic/gaussian_mixture_model."; 
 	CMixtureModel target; 
 	if (!Configure_GaussianMixtureModel_File(target, filename_base))
 	{
@@ -64,7 +64,8 @@ int main()
 	CEES_Pthread::ultimate_target = &target;	
 	CEES_Pthread::SetEnergyLevels_GeometricProgression(H0, HK_1);
 	CEES_Pthread::InitializeMinEnergy(); 				// For tuning energy levels based on newly identified min_energy 
-	CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C);
+	//CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C);
+	CEES_Pthread::SetTemperatures_EnergyLevels(T0,TK_1); 
 	CEES_Pthread::SetPthreadParameters(NUMBER_ENERGY_LEVEL);	// Pthread condition and mutex
  
 	/*
@@ -123,6 +124,7 @@ int main()
 		pthread_join(thread[i], NULL);
 
 	/* simulation */
+	/* If energy-level-tuning is not allowed, then the simulation is run through the end*/
 	if (!IF_ENERGY_LEVEL_TUNING)
 	{
 		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
@@ -134,10 +136,15 @@ int main()
 			pthread_join(thread[i], NULL);
 	}
 	else 
+	/* If energy-level-tuning is allowed, then tuning is performed every once a while (ENERGY_LEVEL_TUNING_FREQUENCY steps) for up to ENERGY_LEVEL_TUNING_MAX_TIME times, and then simulation is run through the end */
 	{
 		int nEnergyLevelTuning = 0; 
+		/* energy level tuning */
 		while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
 		{
+			if (CEES_Pthread::IfTuneEnergyLevel())
+				TuneEnergyLevels_UpdateStorage(simulator); 
+			nEnergyLevelTuning ++;
 			for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
                 	{
 				simulator[i].simulationL = ENERGY_LEVEL_TUNING_FREQUENCY;
@@ -145,10 +152,8 @@ int main()
 			}
                 	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
                         	pthread_join(thread[i], NULL);
-			if (CEES_Pthread::IfTuneEnergyLevel())
-				TuneEnergyLevels_UpdateStorage(simulator); 
-			nEnergyLevelTuning ++;
 		}
+		/* runing simulation */
 		if (SIMULATION_LENGTH - ENERGY_LEVEL_TUNING_MAX_TIME*ENERGY_LEVEL_TUNING_FREQUENCY > 0)
 		{
 			for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
@@ -189,6 +194,15 @@ void *initialize(void *node_void)
 {
 	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
 	int id = simulator->GetID(); 
+	/* Uniform distribution in [0, 1]^2 used for initialization. */
+	double *lB = new double [CEES_Pthread::GetDataDimension()]; 
+	double *uB = new double [CEES_Pthread::GetDataDimension()]; 
+	for (int i=0; i<CEES_Pthread::GetDataDimension(); i++)
+	{
+		lB[i] = 0.0; 
+		uB[i] = 1.0; 
+	}
+	CModel *initial_model = new CUniformModel(CEES_Pthread::GetDataDimension(), lB, uB); 
 
 	/* Wait till the next-level's initial ring is built up */
 	if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
@@ -196,28 +210,27 @@ void *initialize(void *node_void)
 		CEES_Pthread::mutex_lock(id);
 		CEES_Pthread::condition_wait(id); 
 		CEES_Pthread::mutex_unlock(id);
-		simulator->Initialize(); 
+		if (!simulator->Initialize() )
+			simulator->Initialize(initial_model); 
 	}
 	else
-	{
-		/* Uniform distribution in [0, 1]^2 used for initialization. */
-		double *lB = new double [CEES_Pthread::GetDataDimension()]; 
-		double *uB = new double [CEES_Pthread::GetDataDimension()]; 
-		for (int i=0; i<CEES_Pthread::GetDataDimension(); i++)
-		{
-			lB[i] = 0.0; 
-			uB[i] = 1.0; 
-		}
-		CModel *initial_model = new CUniformModel(CEES_Pthread::GetDataDimension(), lB, uB); 
 		simulator->Initialize(initial_model); 
-		delete initial_model;
-		delete [] lB; 
-		delete [] uB; 
-	}
 
-	bool not_check_yet = true;  
+	delete initial_model;
+	delete [] lB; 
+	delete [] uB; 
+
+	/* If burning-in and initial ring built-up is finished, then signal to wake up relevant threads. In this period, MH tuning is allowed. */
+	bool not_check_yet = true; 
+	int n=0;  
 	while (!simulator->EnergyRingBuildDone())
+	{
+		if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
+                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, 0.22, 0.32);
+
 		simulator->draw();
+		n++; 
+	}
 	if (id >0 && not_check_yet)
        	{
 		not_check_yet = false;

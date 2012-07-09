@@ -53,13 +53,18 @@ void CEES_Pthread::Initialize(CModel *initial)
 	CEES_Node::Initialize(initial, r); 
 }
 
-void CEES_Pthread::Initialize()
+bool CEES_Pthread::Initialize()
 {
 	int bin_id = next_level->BinID(id); 
 	int id; 
 	double weight; 
-	storage->DrawSample(bin_id, x_new, CEES_Node::GetDataDimension(), id, weight, r); 
-	CEES_Node::Initialize(x_new, CEES_Node::GetDataDimension()); 
+	if (storage->DrawSample(bin_id, x_new, CEES_Node::GetDataDimension(), id, weight, r)) 
+	{
+		CEES_Node::Initialize(x_new, CEES_Node::GetDataDimension()); 
+		return true; 
+	}
+	else 
+		return false;
 }
 
 void CEES_Pthread::draw()
