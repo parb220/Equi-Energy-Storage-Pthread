@@ -40,4 +40,5 @@ void TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator)
 		pthread_join(thread[i], NULL); 
 	
 	simulator->storage->ClearTemporaryBin(); 
+	delete [] thread; 
 }
