@@ -23,8 +23,9 @@ void TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator)
                 exit(-1);
         }
 
-	if (!CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C) )
-        {
+	//if (!CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C) )
+        if (!CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1) )
+	{
                 cout << "Error in setting temperature levels." << endl;
                 exit(-1);
         }

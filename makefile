@@ -1,14 +1,11 @@
-SOURCES = CEES_Pthread.cpp CStorageHeadPthread.cpp test_gaussian_mixture_pthread.cpp TuneEnergyLevlesUpdateStorage.cpp
-OBJS = CEES_Pthread.o CStorageHeadPthread.o test_gaussian_mixture_pthread.o TuneEnergyLevlesUpdateStorage.o
+SOURCES = CEES_Pthread.cpp CStorageHeadPthread.cpp test_gaussian_mixture_pthread.cpp TuneEnergyLevlesUpdateStorage.cpp pthread_initialize_simulation.cpp
+OBJS = CEES_Pthread.o CStorageHeadPthread.o test_gaussian_mixture_pthread.o TuneEnergyLevlesUpdateStorage.o pthread_initialize_simulation.o
 EXECUTABLE = test_gaussian_mixture_pthread
 
-CPP = g++
-DEBUG = -g
-CPPFLAGS = -c -Wall $(DEBUG)
-LINKFLAGS = -Wall $(DEBUG)
-LIBS = -lstdc++ -lpthread
-LIBS_DIR = -L/usr/lib64
-INCLUDE_DIR =
+CPP = gcc
+CPPFLAGS := $(CPPFLAGS) -g -Wall 
+LIBS := $(LIBS) -lstdc++ -lpthread
+LIBS_DIR := $(LIBS_DIR) -L/usr/lib64
 
 EQUAL_ENERGY_HOME = /home/f1hxw01/equal_energy_hw
 INCLUDE_DIR := $(INCLUDE_DIR) -I$(EQUAL_ENERGY_HOME)/include
@@ -20,7 +17,7 @@ SINGLE_CORE_VERSION_DIR = $(EQUAL_ENERGY_HOME)/equi_energy_storage
 SINGLE_CORE_VERSION_OBJS = $(SINGLE_CORE_VERSION_DIR)/CEES_Node.o $(SINGLE_CORE_VERSION_DIR)/CPutGetBin.o $(SINGLE_CORE_VERSION_DIR)/CSampleIDWeight.o $(SINGLE_CORE_VERSION_DIR)/CStorageHead.o
 
 $(EXECUTABLE) : $(OBJS) $(DISTR_MODEL_OBJS) $(SINGLE_CORE_VERSION_OBJS) 
-	$(CPP) $(LINKFLAGS) $(OBJS) $(DISTR_MODEL_OBJS) $(SINGLE_CORE_VERSION_OBJS) $(LIBS_DIR) $(LIBS) -o $@
+	$(CPP) $(CPPFLAGS) $(LIBS_DIR) $(LIBS) $(OBJS) $(DISTR_MODEL_OBJS) $(SINGLE_CORE_VERSION_OBJS) -o $@
 
 %.o : %.cpp
 	$(CPP) $(CPPFLAGS) $(INCLUDE_DIR) -c $< -o $@
