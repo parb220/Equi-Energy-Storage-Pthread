@@ -21,7 +21,6 @@
 #include <cmath>
 #include <gsl/gsl_rng.h>
 #include <pthread.h>
-#include "constant.h"
 #include "equi_energy_setup_constant.h"
 #include "CMixtureModel.h"
 #include "CSimpleGaussianModel.h"
@@ -38,7 +37,7 @@
 using namespace std;
 
 bool Configure_GaussianMixtureModel_File(CMixtureModel &, const string); 
-void *initialize(void*);
+void *initialize_simulate(void*);
 void *simulation(void*); 
 void TuneEnergyLevels_UpdateStorage(CEES_Pthread *); 
 int main()
@@ -117,54 +116,55 @@ int main()
 	pthread_t *thread = new pthread_t[CEES_Pthread::GetEnergyLevelNumber()];
 
 	/* Initializing */
-	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)	
-		pthread_create(&(thread[i]), NULL, initialize, (void*)(simulator+i));
-
-	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-		pthread_join(thread[i], NULL);
-
-	/* simulation */
-	/* If energy-level-tuning is not allowed, then the simulation is run through the end*/
-	if (!IF_ENERGY_LEVEL_TUNING)
+	if (IF_ENERGY_LEVEL_TUNING)
+	/* If energy-level-tuning is allowed, then tuning is performed every once a while (ENERGY_LEVEL_TUNING_FREQUENCY steps) for up to ENERGY_LEVEL_TUNING_MAX_TIME times, and then simulation is run through the end */
 	{
+		cout << "Burn in, build initial ring and run for " << ENERGY_LEVEL_TUNING_FREQUENCY << " steps.\n"; 
 		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                {
-			simulator[i].simulationL = SIMULATION_LENGTH; 
-			pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+		{
+			simulator[i].simulationL = ENERGY_LEVEL_TUNING_FREQUENCY; 
+			pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));
 		}
 		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
 			pthread_join(thread[i], NULL);
-	}
-	else 
-	/* If energy-level-tuning is allowed, then tuning is performed every once a while (ENERGY_LEVEL_TUNING_FREQUENCY steps) for up to ENERGY_LEVEL_TUNING_MAX_TIME times, and then simulation is run through the end */
-	{
-		int nEnergyLevelTuning = 0; 
-		/* energy level tuning */
+
+		int nEnergyLevelTuning = 0;
+                /* energy level tuning */
 		while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
-		{
-			if (CEES_Pthread::IfTuneEnergyLevel())
-				TuneEnergyLevels_UpdateStorage(simulator); 
-			nEnergyLevelTuning ++;
-			for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                	{
-				simulator[i].simulationL = ENERGY_LEVEL_TUNING_FREQUENCY;
-				pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
-			}
-                	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                        	pthread_join(thread[i], NULL);
-		}
-		/* runing simulation */
-		if (SIMULATION_LENGTH - ENERGY_LEVEL_TUNING_MAX_TIME*ENERGY_LEVEL_TUNING_FREQUENCY > 0)
-		{
-			for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                {       
+			cout << "Energy level tuning: " << nEnergyLevelTuning << " for " << ENERGY_LEVEL_TUNING_FREQUENCY << " steps.\n"; 
+                        if (CEES_Pthread::IfTuneEnergyLevel())
+                                TuneEnergyLevels_UpdateStorage(simulator);
+                        nEnergyLevelTuning ++;
+                        for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
                         {
-                                simulator[i].simulationL = SIMULATION_LENGTH - ENERGY_LEVEL_TUNING_MAX_TIME*ENERGY_LEVEL_TUNING_FREQUENCY;
-                                pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+                                simulator[i].simulationL = ENERGY_LEVEL_TUNING_FREQUENCY;
+                                pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));       
                         }
                         for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
                                 pthread_join(thread[i], NULL);
 		}
+		// run through simulation
+		cout << "Simulation for " << SIMULATION_LENGTH << " steps.\n"; 
+		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                {
+                	simulator[i].simulationL = SIMULATION_LENGTH ;
+                        pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+                }
+                for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                	pthread_join(thread[i], NULL);
 	}
+	else 
+	{
+		cout << "Simulation for " << SIMULATION_LENGTH << " steps.\n"; 
+		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                {     
+                        simulator[i].simulationL = SIMULATION_LENGTH ;
+                        pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));
+                }
+                for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+                        pthread_join(thread[i], NULL);
+	}	
 
 	
 	storage.finalize(); 		// save to hard-disk of those unsaved data

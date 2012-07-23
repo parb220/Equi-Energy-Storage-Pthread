@@ -1,0 +1,6 @@
+*.o
+*.mean
+*.sigma
+*.weight
+*.bak
+test_gaussian_mixture_pthread

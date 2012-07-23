@@ -67,9 +67,9 @@ bool CEES_Pthread::Initialize()
 		return false;
 }
 
-void CEES_Pthread::draw()
+void CEES_Pthread::draw(int mMH)
 {
-	CEES_Node::draw(r, (CStorageHead &)(*storage)); 
+	CEES_Node::draw(r, (CStorageHead &)(*storage), mMH); 
 }
 
 void CEES_Pthread::SetHigherNodePointer(const CEES_Pthread *next)
