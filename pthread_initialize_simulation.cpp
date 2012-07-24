@@ -22,7 +22,7 @@ void *initialize_simulate(void *node_void)
         /* Wait till the next-level's initial ring is built up */
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
         {
-                CEES_Pthread::mutex_lock(id);
+               	CEES_Pthread::mutex_lock(id);
                 CEES_Pthread::condition_wait(id);
                 CEES_Pthread::mutex_unlock(id);
                 if (!simulator->Initialize() )
@@ -41,7 +41,7 @@ void *initialize_simulate(void *node_void)
         while (!simulator->EnergyRingBuildDone())
         {
                 if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
-                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, 0.1, 0.6);
+                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
 
                 simulator->draw(MULTIPLE_TRY_MH);
                 n++;
@@ -53,14 +53,13 @@ void *initialize_simulate(void *node_void)
                 CEES_Pthread::mutex_lock(id-1);
                 CEES_Pthread::condition_signal(id-1);
                 CEES_Pthread::mutex_unlock(id-1);
-
-		cout << "ring " << id << ": initial ring built done.\n"; 
         }
+	cout << "ring " << id << ": initial ring built done.\n"; 
 
 	for (int n=0; n<simulator->simulationL; n++)
         {
                 if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
-                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, 0.1, 0.6);
+                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
                 simulator->draw(MULTIPLE_TRY_MH);
         }
 }
@@ -71,7 +70,7 @@ void *simulation(void *node_void)
         for (int n=0; n<simulator->simulationL; n++)
         {
                 if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
-                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, 0.1, 0.6);
+                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
                 simulator->draw(MULTIPLE_TRY_MH);
         }
 }

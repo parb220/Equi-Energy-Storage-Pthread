@@ -97,7 +97,8 @@ int main()
 		simulator[i].r = r; 	// random number generator  
 		if (i < CEES_Pthread::GetEnergyLevelNumber() -1)
 		{
-			simulator[i].SetBurnInPeriod(0);
+			//simulator[i].SetBurnInPeriod(0);
+			simulator[i].SetBurnInPeriod(BURN_IN_PERIOD);
 			simulator[i].SetHigherNodePointer(simulator+i+1);
 		}
 		else 
@@ -105,9 +106,9 @@ int main()
 			simulator[i].SetHigherNodePointer(NULL);
 			simulator[i].SetBurnInPeriod(BURN_IN_PERIOD);  
 		}
-		/* Transition_SimpleGaussian with sigma=0.25sqrt(T) used for each energy level as the proposal model */	
+		/* Transition_SimpleGaussian with sigma=INITIAL_SIGMA sqrt(T) used for each energy level as the proposal model */	
                 for (int j=0; j<CEES_Pthread::GetDataDimension(); j++)
-                        sigma[j] = 0.25 * sqrt(simulator[i].GetTemperature());
+                        sigma[j] = INITIAL_SIGMA * sqrt(simulator[i].GetTemperature());
                 simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetDataDimension(), sigma));
 	}
 	delete [] sigma; 
@@ -180,7 +181,16 @@ int main()
 		exit(-1); 
 	}
 	summary(oFile, storage); 
-	summary(oFile, simulator[CEES_Pthread::GetEnergyLevelNumber()-1]);   
+	summary(oFile, simulator);   
+	oFile << "Burn-In:";
+        for (int i=0; i<CEES_Node::GetEnergyLevelNumber(); i++)
+                oFile << "\t" << simulator[i].GetBurnInPeriod();
+        oFile << endl;
+        oFile << "Step size:";
+        for (int i=0; i<CEES_Node::GetEnergyLevelNumber(); i++)
+                oFile << "\t" << simulator[i].GetProposal()->get_step_size();
+        oFile << endl;
+
 	oFile.close(); 
 	
 	/* Release dynamically allocated space */
