@@ -66,7 +66,10 @@ int main()
 	//CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C);
 	CEES_Pthread::SetTemperatures_EnergyLevels(T0,TK_1); 
 	CEES_Pthread::SetPthreadParameters(NUMBER_ENERGY_LEVEL);	// Pthread condition and mutex
- 
+	if (MH_BLOCK)							// MH in blocks
+		CEES_Pthread::SetBlockSize(NULL, CEES_Pthread::GetDataDimension()); 
+	else 
+		CEES_Pthread::SetBlockSize(NULL); 
 	/*
  	Initialize the random_number_generator which will be used for all distributions to draw samples.
  	*/
@@ -90,7 +93,6 @@ int main()
 	
 	/*  Generate K CEES_Pthread objects */
 	CEES_Pthread *simulator = new CEES_Pthread[CEES_Pthread::GetEnergyLevelNumber()]; 
-	double *sigma = new double[CEES_Pthread::GetDataDimension()];
 	for (int i=0; i<CEES_Pthread::GetEnergyLevelNumber(); i++)
 	{
 		simulator[i].SetID_LocalTarget(i);
@@ -106,12 +108,20 @@ int main()
 			simulator[i].SetHigherNodePointer(NULL);
 			simulator[i].SetBurnInPeriod(BURN_IN_PERIOD);  
 		}
-		/* Transition_SimpleGaussian with sigma=INITIAL_SIGMA sqrt(T) used for each energy level as the proposal model */	
-                for (int j=0; j<CEES_Pthread::GetDataDimension(); j++)
-                        sigma[j] = INITIAL_SIGMA * sqrt(simulator[i].GetTemperature());
-                simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetDataDimension(), sigma));
 	}
-	delete [] sigma; 
+	// MH Proposal distribution
+	double *sigma; 
+	for (int i=0; i<CEES_Pthread::GetEnergyLevelNumber(); i++)
+	{
+		for (int iBlock = 0; iBlock<CEES_Pthread::GetNumberBlocks(); iBlock++)
+		{
+			sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
+			for (int j=0; j<CEES_Node::GetBlockSize(iBlock); j++)
+				sigma[j] = INITIAL_SIGMA * sqrt(simulator[i].GetTemperature())*(iBlock+1);	// *(iBlock+1) is only for gaussian mixture case because the range of each dimension is different 
+			simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(CEES_Node::GetBlockSize(iBlock), sigma), iBlock); 
+			delete [] sigma; 
+		}
+	}
 
 	/* Pthread */
 	pthread_t *thread = new pthread_t[CEES_Pthread::GetEnergyLevelNumber()];
@@ -186,11 +196,13 @@ int main()
         for (int i=0; i<CEES_Node::GetEnergyLevelNumber(); i++)
                 oFile << "\t" << simulator[i].GetBurnInPeriod();
         oFile << endl;
-        oFile << "Step size:";
-        for (int i=0; i<CEES_Node::GetEnergyLevelNumber(); i++)
-                oFile << "\t" << simulator[i].GetProposal()->get_step_size();
-        oFile << endl;
-
+	for (int iBlock =0; iBlock <CEES_Pthread::GetNumberBlocks(); iBlock++)
+        {
+                oFile << "Step size " << iBlock << ":";
+                for (int i=0; i<CEES_Pthread::GetEnergyLevelNumber(); i++)
+                        oFile << "\t" << simulator[i].GetProposal(iBlock)->get_step_size();
+                oFile << endl;
+        }
 	oFile.close(); 
 	
 	/* Release dynamically allocated space */

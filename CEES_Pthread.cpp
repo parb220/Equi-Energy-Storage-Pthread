@@ -72,6 +72,11 @@ void CEES_Pthread::draw(int mMH)
 	CEES_Node::draw(r, (CStorageHead &)(*storage), mMH); 
 }
 
+void CEES_Pthread::draw_block()
+{
+	CEES_Node::draw_block(r, (CStorageHead &)(*storage)); 
+}
+
 void CEES_Pthread::SetHigherNodePointer(const CEES_Pthread *next)
 {
 	CEES_Node::SetHigherNodePointer((CEES_Node *)next);

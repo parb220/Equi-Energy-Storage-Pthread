@@ -43,7 +43,8 @@ void *initialize_simulate(void *node_void)
                 if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
                         simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
 
-                simulator->draw(MULTIPLE_TRY_MH);
+                // simulator->draw(MULTIPLE_TRY_MH);
+                simulator->draw_block(); 
                 n++;
         }
         if (id >0 && not_check_yet)
@@ -60,7 +61,8 @@ void *initialize_simulate(void *node_void)
         {
                 if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
                         simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
-                simulator->draw(MULTIPLE_TRY_MH);
+                // simulator->draw(MULTIPLE_TRY_MH);
+                simulator->draw_block();
         }
 }
 
@@ -71,7 +73,8 @@ void *simulation(void *node_void)
         {
                 if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
                         simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
-                simulator->draw(MULTIPLE_TRY_MH);
+                // simulator->draw(MULTIPLE_TRY_MH);
+                simulator->draw_block(); 
         }
 }
  
