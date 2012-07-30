@@ -62,7 +62,7 @@ int main()
 	CEES_Pthread::SetDepositFreq(DEPOSIT_FREQUENCY); 		// Frequency of deposit
 	CEES_Pthread::ultimate_target = &target;	
 	CEES_Pthread::SetEnergyLevels_GeometricProgression(H0, HK_1);
-	CEES_Pthread::InitializeMinEnergy(); 				// For tuning energy levels based on newly identified min_energy 
+	CEES_Pthread::InitializeMinMaxEnergy(ENERGY_TRACKING_NUMBER);// For tuning energy levels based on newly identified min_energy 
 	//CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C);
 	CEES_Pthread::SetTemperatures_EnergyLevels(T0,TK_1); 
 	CEES_Pthread::SetPthreadParameters(NUMBER_ENERGY_LEVEL);	// Pthread condition and mutex
@@ -117,7 +117,7 @@ int main()
 		{
 			sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
 			for (int j=0; j<CEES_Node::GetBlockSize(iBlock); j++)
-				sigma[j] = INITIAL_SIGMA * sqrt(simulator[i].GetTemperature())*(iBlock+1);	// *(iBlock+1) is only for gaussian mixture case because the range of each dimension is different 
+				sigma[j] = INITIAL_SIGMA * sqrt(simulator[i].GetTemperature());	
 			simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(CEES_Node::GetBlockSize(iBlock), sigma), iBlock); 
 			delete [] sigma; 
 		}
@@ -144,8 +144,7 @@ int main()
 		while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
                 {       
 			cout << "Energy level tuning: " << nEnergyLevelTuning << " for " << ENERGY_LEVEL_TUNING_FREQUENCY << " steps.\n"; 
-                        if (CEES_Pthread::IfTuneEnergyLevel())
-                                TuneEnergyLevels_UpdateStorage(simulator);
+                        TuneEnergyLevels_UpdateStorage(simulator);
                         nEnergyLevelTuning ++;
                         for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
                         {

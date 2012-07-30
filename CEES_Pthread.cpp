@@ -2,6 +2,8 @@
 
 vector <pthread_cond_t> CEES_Pthread::condition; 
 vector <pthread_mutex_t> CEES_Pthread::mutex; 
+pthread_mutex_t CEES_Pthread::global_mutex; 
+vector < bool> CEES_Pthread::flag; 
 CStorageHeadPthread* CEES_Pthread::storage;
 
 CEES_Pthread::CEES_Pthread(int _id) : CEES_Node(_id)
@@ -21,11 +23,14 @@ void CEES_Pthread::SetPthreadParameters(int n)
 {
 	condition.resize(n); 
 	mutex.resize(n); 
+	flag.resize(n); 
 	for (int i=0; i<n; i++)
 	{
 		pthread_cond_init(&(condition[i]), NULL); 
 		pthread_mutex_init(&(mutex[i]), NULL); 
+		flag[i] = false; 
 	}
+	pthread_mutex_init(&global_mutex, NULL); 
 }
 
 int CEES_Pthread::mutex_lock(int _id)
@@ -55,12 +60,18 @@ void CEES_Pthread::Initialize(CModel *initial)
 
 bool CEES_Pthread::Initialize()
 {
-	int bin_id = next_level->BinID(id); 
-	int id; 
-	double weight; 
-	if (storage->DrawSample(bin_id, x_new, CEES_Node::GetDataDimension(), id, weight, r)) 
+	int sample_id; 
+	double sample_weight; 
+	int level_id=0; 
+	int bin_id = next_level->BinID(level_id); 
+	while(level_id < K && ! storage->DrawSample(bin_id, x_new, GetDataDimension(), sample_id, sample_weight, r)) 
 	{
-		CEES_Node::Initialize(x_new, CEES_Node::GetDataDimension()); 
+		level_id ++; 
+		bin_id = next_level->BinID(level_id); 
+	}
+	if (level_id < K)
+	{
+		CEES_Node::Initialize(x_new, GetDataDimension()); 
 		return true; 
 	}
 	else 
@@ -82,19 +93,11 @@ void CEES_Pthread::SetHigherNodePointer(const CEES_Pthread *next)
 	CEES_Node::SetHigherNodePointer((CEES_Node *)next);
 }
 
-void CEES_Pthread::UpdateMinEnergy(double _new_energy)
+void CEES_Pthread::UpdateMinMaxEnergy(double _new_energy)
 {
-	pthread_mutex_t *local_mutex = new pthread_mutex_t; 
-	pthread_mutex_init(local_mutex, NULL); 
-	pthread_mutex_lock(local_mutex); 
-	if (_new_energy < min_energy)
-        {
-                min_energy = _new_energy;
-                if (min_energy < H[0])
-                        if_tune_energy_level = true;
-        }
-	pthread_mutex_unlock(local_mutex); 
-	pthread_mutex_destroy(local_mutex); 
+	pthread_mutex_lock(&global_mutex); 
+	CEES_Node::UpdateMinMaxEnergy(_new_energy); 
+	pthread_mutex_unlock(&global_mutex); 
 }
 
 void CEES_Pthread::AssignSamplesGeneratedSoFar()

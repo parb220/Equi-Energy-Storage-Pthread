@@ -23,8 +23,10 @@ void *initialize_simulate(void *node_void)
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
         {
                	CEES_Pthread::mutex_lock(id);
-                CEES_Pthread::condition_wait(id);
+		while (!CEES_Pthread::flag_status(id))
+                	CEES_Pthread::condition_wait(id);
                 CEES_Pthread::mutex_unlock(id);
+		CEES_Pthread::flag_turn(id, false); 
                 if (!simulator->Initialize() )
                         simulator->Initialize(initial_model);
         }
@@ -53,6 +55,7 @@ void *initialize_simulate(void *node_void)
                 /* Signal the previous level to start */
                 CEES_Pthread::mutex_lock(id-1);
                 CEES_Pthread::condition_signal(id-1);
+		CEES_Pthread::flag_turn(id-1, true);
                 CEES_Pthread::mutex_unlock(id-1);
         }
 	cout << "ring " << id << ": initial ring built done.\n"; 
