@@ -9,7 +9,10 @@ void *initialize_simulate(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
         int id = simulator->GetID();
-        /* Uniform distribution in [0, 1]^d used for initialization. */
+	double *mode = new double [CEES_Pthread::GetDataDimension()];
+	CEES_Pthread::ultimate_target->GetMode(mode, CEES_Pthread::GetDataDimension()); 
+
+        /* Uniform distribution in [0, 1]^d used for initialization.
         double *lB = new double [CEES_Pthread::GetDataDimension()];
         double *uB = new double [CEES_Pthread::GetDataDimension()];
         for (int i=0; i<CEES_Pthread::GetDataDimension(); i++)
@@ -17,7 +20,7 @@ void *initialize_simulate(void *node_void)
                 lB[i] = 0.0;
                 uB[i] = 1.0;
         }
-        CModel *initial_model = new CUniformModel(CEES_Pthread::GetDataDimension(), lB, uB);
+        CModel *initial_model = new CUniformModel(CEES_Pthread::GetDataDimension(), lB, uB); */
 
         /* Wait till the next-level's initial ring is built up */
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
@@ -28,14 +31,17 @@ void *initialize_simulate(void *node_void)
                 CEES_Pthread::mutex_unlock(id);
 		CEES_Pthread::flag_turn(id, false); 
                 if (!simulator->Initialize() )
-                        simulator->Initialize(initial_model);
+                        // simulator->Initialize(initial_model);
+                        simulator->Initialize(mode, CEES_Pthread::GetDataDimension()); 
         }
         else
-                simulator->Initialize(initial_model);
+                // simulator->Initialize(initial_model);
+                simulator->Initialize(mode, CEES_Pthread::GetDataDimension()); 
 
-        delete initial_model;
+	delete [] mode; 
+        /* delete initial_model;
         delete [] lB;
-        delete [] uB;
+        delete [] uB;*/
 
         /* If burning-in and initial ring built-up is finished, then signal to wake up relevant threads. In this period, MH tuning is allowed. */
         bool not_check_yet = true;

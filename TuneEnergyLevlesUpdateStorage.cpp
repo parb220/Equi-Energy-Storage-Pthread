@@ -25,8 +25,9 @@ void TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator)
 	if (new_H0_average < CEES_Node::H[0])
 		CEES_Pthread::SetEnergyLevels_GeometricProgression(new_H0_average, HK_1); 
 
-	double new_TK_1 = new_HK_1_average * 100;
-        CEES_Node::SetTemperatures_EnergyLevels(T0, new_TK_1);
+	/*double new_TK_1 = new_HK_1_average * 100;
+	if (new_TK_1 < CEES_Node::T[CEES_Node::K-1] *100)
+        	CEES_Node::SetTemperatures_EnergyLevels(T0, new_TK_1);*/
 	
 	// Re-adjust local target distribution and process samples that have been generated; 
 	pthread_t *thread = new pthread_t[CEES_Pthread::K]; 
