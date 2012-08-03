@@ -39,6 +39,7 @@ using namespace std;
 bool Configure_GaussianMixtureModel_File(CMixtureModel &, const string); 
 void *initialize_simulate(void*);
 void *simulation(void*); 
+void *tuning_simulation(void *); 
 void TuneEnergyLevels_UpdateStorage(CEES_Pthread *); 
 int main()
 {
@@ -55,17 +56,16 @@ int main()
 	}
 
 	/* Initializing CEES_Pthread */ 
-	CEES_Pthread::SetEnergyLevelNumber(NUMBER_ENERGY_LEVEL); 		// Number of energy levels; 
-	CEES_Pthread::SetEquiEnergyJumpProb(PEE);				// Probability for equal energy jump
-	CEES_Pthread::SetPeriodBuildInitialRing(BUILD_INITIAL_ENERGY_SET_PERIOD);	// Period to build initial energy ring
+	CEES_Pthread::SetEnergyLevelNumber(NUMBER_ENERGY_LEVEL); 	// Number of energy levels; 
+	CEES_Pthread::SetEquiEnergyJumpProb(PEE);			// Probability for equal energy jump
 	CEES_Pthread::SetDataDimension(DATA_DIMENSION); 		// Data dimension for simulation
-	CEES_Pthread::SetDepositFreq(DEPOSIT_FREQUENCY); 		// Frequency of deposit
 	CEES_Pthread::ultimate_target = &target;	
+	
 	CEES_Pthread::SetEnergyLevels_GeometricProgression(H0, HK_1);
-	CEES_Pthread::InitializeMinMaxEnergy(ENERGY_TRACKING_NUMBER);// For tuning energy levels based on newly identified min_energy 
-	//CEES_Pthread::SetTemperatures_EnergyLevels(T0, TK_1, C);
-	CEES_Pthread::SetTemperatures_EnergyLevels(T0,TK_1); 
+	CEES_Pthread::InitializeMinMaxEnergy(ENERGY_TRACKING_NUMBER);	// For tuning energy levels based on newly identified min_energy 
+	CEES_Pthread::SetTemperatures_EnergyLevels(T0, C, true); 
 	CEES_Pthread::SetPthreadParameters(NUMBER_ENERGY_LEVEL);	// Pthread condition and mutex
+	
 	if (MH_BLOCK)							// MH in blocks
 		CEES_Pthread::SetBlockSize(NULL, CEES_Pthread::GetDataDimension()); 
 	else 
@@ -98,84 +98,53 @@ int main()
 		simulator[i].SetID_LocalTarget(i);
 		simulator[i].r = r; 	// random number generator  
 		if (i < CEES_Pthread::GetEnergyLevelNumber() -1)
-		{
-			//simulator[i].SetBurnInPeriod(0);
-			simulator[i].SetBurnInPeriod(BURN_IN_PERIOD);
 			simulator[i].SetHigherNodePointer(simulator+i+1);
-		}
 		else 
-		{
 			simulator[i].SetHigherNodePointer(NULL);
-			simulator[i].SetBurnInPeriod(BURN_IN_PERIOD);  
-		}
-	}
-	// MH Proposal distribution
-	double *sigma; 
-	for (int i=0; i<CEES_Pthread::GetEnergyLevelNumber(); i++)
-	{
-		for (int iBlock = 0; iBlock<CEES_Pthread::GetNumberBlocks(); iBlock++)
-		{
-			sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
-			for (int j=0; j<CEES_Node::GetBlockSize(iBlock); j++)
-				sigma[j] = INITIAL_SIGMA * sqrt(simulator[i].GetTemperature());	
-			simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(CEES_Node::GetBlockSize(iBlock), sigma), iBlock); 
-			delete [] sigma; 
-		}
 	}
 
 	/* Pthread */
 	pthread_t *thread = new pthread_t[CEES_Pthread::GetEnergyLevelNumber()];
 
-	/* Initializing */
-	if (IF_ENERGY_LEVEL_TUNING)
-	/* If energy-level-tuning is allowed, then tuning is performed every once a while (ENERGY_LEVEL_TUNING_FREQUENCY steps) for up to ENERGY_LEVEL_TUNING_MAX_TIME times, and then simulation is run through the end */
+	/* Initializing - burn-in - MH-stepsize-Regression -- simulate*/
+	cout << "Initialize, burn in, tune/estimate MH stepsize and simulate for " << ENERGY_LEVEL_TRACKING_WINDOW_LENGTH << " steps.\n"; 
+	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
 	{
-		cout << "Burn in, build initial ring and run for " << ENERGY_LEVEL_TUNING_FREQUENCY << " steps.\n"; 
+		simulator[i].burnInL = BURN_IN_PERIOD; 
+		simulator[i].mMH = MULTIPLE_TRY_MH; 
+		simulator[i].MHMaxTime = MH_STEPSIZE_TUNING_MAX_TIME; 
+		simulator[i].MHInitialL = MH_TRACKING_LENGTH; 
+		simulator[i].MHTargetACC = MH_TARGET_ACC; 
+		simulator[i].simulationL = ENERGY_LEVEL_TRACKING_WINDOW_LENGTH;
+		simulator[i].depositFreq = DEPOSIT_FREQUENCY; 
+		pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));
+	}
+	
+	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+		pthread_join(thread[i], NULL);
+
+	int nEnergyLevelTuning = 0;
+	while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
+        {       
+		cout << "Energy level tuning: " << nEnergyLevelTuning << " for " << ENERGY_LEVEL_TRACKING_WINDOW_LENGTH << " steps.\n"; 
+		TuneEnergyLevels_UpdateStorage(simulator);
+		nEnergyLevelTuning ++;
 		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
 		{
-			simulator[i].simulationL = ENERGY_LEVEL_TUNING_FREQUENCY; 
-			pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));
-		}
-		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-			pthread_join(thread[i], NULL);
-
-		int nEnergyLevelTuning = 0;
-                /* energy level tuning */
-		while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
-                {       
-			cout << "Energy level tuning: " << nEnergyLevelTuning << " for " << ENERGY_LEVEL_TUNING_FREQUENCY << " steps.\n"; 
-                        TuneEnergyLevels_UpdateStorage(simulator);
-                        nEnergyLevelTuning ++;
-                        for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                        {
-                                simulator[i].simulationL = ENERGY_LEVEL_TUNING_FREQUENCY;
-                                pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));       
-                        }
-                        for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                                pthread_join(thread[i], NULL);
-		}
-		// run through simulation
-		cout << "Simulation for " << SIMULATION_LENGTH << " steps.\n"; 
-		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                {
-                	simulator[i].simulationL = SIMULATION_LENGTH ;
-                        pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+			simulator[i].simulationL = ENERGY_LEVEL_TRACKING_WINDOW_LENGTH; 
+                        pthread_create(&(thread[i]), NULL, tuning_simulation, (void*)(simulator+i));       
                 }
-                for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                	pthread_join(thread[i], NULL);
+               	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)				pthread_join(thread[i], NULL);
 	}
-	else 
-	{
-		cout << "Simulation for " << SIMULATION_LENGTH << " steps.\n"; 
-		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                {     
-                        simulator[i].simulationL = SIMULATION_LENGTH ;
-                        pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));
-                }
-                for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
-                        pthread_join(thread[i], NULL);
-	}	
-
+	// run through simulation
+	cout << "Simulation for " << SIMULATION_LENGTH << " steps.\n"; 
+	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+        {
+		simulator[i].simulationL = SIMULATION_LENGTH ;
+               	pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
+        }
+        for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
+               	pthread_join(thread[i], NULL);
 	
 	storage.finalize(); 		// save to hard-disk of those unsaved data
 
@@ -189,19 +158,18 @@ int main()
 		cout << "Error in writing the summary file.\n"; 
 		exit(-1); 
 	}
-	summary(oFile, storage); 
-	summary(oFile, simulator);   
-	oFile << "Burn-In:";
+	oFile << "Burn In:\t" << BURN_IN_PERIOD << endl;
+        oFile << "Tune Energy Level Window Length:\t" << ENERGY_LEVEL_TRACKING_WINDOW_LENGTH << endl;
+        oFile << "Tune Energy Level Number:\t" << ENERGY_LEVEL_TUNING_MAX_TIME << endl;
+        oFile << "Deposit Frequency:\t" << DEPOSIT_FREQUENCY << endl;
+        oFile << "MH Target Probability:\t" << MH_TARGET_ACC << endl;
+        oFile << "MH Initial Window Length:\t" << MH_TRACKING_LENGTH << endl;
+        oFile << "MH Window Number:\t" << MH_STEPSIZE_TUNING_MAX_TIME << endl;
+        summary(oFile, storage);
+        summary(oFile, simulator);
         for (int i=0; i<CEES_Node::GetEnergyLevelNumber(); i++)
-                oFile << "\t" << simulator[i].GetBurnInPeriod();
-        oFile << endl;
-	for (int iBlock =0; iBlock <CEES_Pthread::GetNumberBlocks(); iBlock++)
-        {
-                oFile << "Step size " << iBlock << ":";
-                for (int i=0; i<CEES_Pthread::GetEnergyLevelNumber(); i++)
-                        oFile << "\t" << simulator[i].GetProposal(iBlock)->get_step_size();
-                oFile << endl;
-        }
+                summary(oFile, simulator[i], i);
+
 	oFile.close(); 
 	
 	/* Release dynamically allocated space */

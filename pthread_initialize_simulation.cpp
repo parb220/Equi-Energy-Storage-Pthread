@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include "equi_energy_setup_constant.h"
 #include "CEES_Pthread.h"
+#include "CTransitionModel_SimpleGaussian.h"
 #include "CUniformModel.h"
 
 using namespace std;
@@ -12,16 +13,6 @@ void *initialize_simulate(void *node_void)
 	double *mode = new double [CEES_Pthread::GetDataDimension()];
 	CEES_Pthread::ultimate_target->GetMode(mode, CEES_Pthread::GetDataDimension()); 
 
-        /* Uniform distribution in [0, 1]^d used for initialization.
-        double *lB = new double [CEES_Pthread::GetDataDimension()];
-        double *uB = new double [CEES_Pthread::GetDataDimension()];
-        for (int i=0; i<CEES_Pthread::GetDataDimension(); i++)
-        {
-                lB[i] = 0.0;
-                uB[i] = 1.0;
-        }
-        CModel *initial_model = new CUniformModel(CEES_Pthread::GetDataDimension(), lB, uB); */
-
         /* Wait till the next-level's initial ring is built up */
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
         {
@@ -30,60 +21,56 @@ void *initialize_simulate(void *node_void)
                 	CEES_Pthread::condition_wait(id);
                 CEES_Pthread::mutex_unlock(id);
 		CEES_Pthread::flag_turn(id, false); 
+		cout << id << " ... Initializing" << endl; 
                 if (!simulator->Initialize() )
-                        // simulator->Initialize(initial_model);
                         simulator->Initialize(mode, CEES_Pthread::GetDataDimension()); 
         }
         else
-                // simulator->Initialize(initial_model);
                 simulator->Initialize(mode, CEES_Pthread::GetDataDimension()); 
-
+	// Set up proposal model 
+	double *sigma; 
+	for (int iBlock =0; iBlock < CEES_Pthread::GetNumberBlocks(); iBlock++)
+	{
+		sigma = new double [CEES_Pthread::GetBlockSize(iBlock)]; 
+		for (int j=0; j<CEES_Pthread::GetBlockSize(iBlock); j++)
+		{
+			if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
+				sigma[j] = simulator->GetNextLevel()->GetProposal(iBlock)->get_step_size(); 
+			else
+				sigma[j] = INITIAL_SIGMA * sqrt(simulator->GetTemperature()); 
+		}
+		simulator->SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetBlockSize(iBlock), sigma), iBlock); 
+			delete [] sigma; 
+	}
 	delete [] mode; 
-        /* delete initial_model;
-        delete [] lB;
-        delete [] uB;*/
-
-        /* If burning-in and initial ring built-up is finished, then signal to wake up relevant threads. In this period, MH tuning is allowed. */
-        bool not_check_yet = true;
-        int n=0;
-        while (!simulator->EnergyRingBuildDone())
-        {
-                if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
-                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
-
-                // simulator->draw(MULTIPLE_TRY_MH);
-                simulator->draw_block(); 
-                n++;
-        }
-        if (id >0 && not_check_yet)
-        {
-                not_check_yet = false;
-                /* Signal the previous level to start */
-                CEES_Pthread::mutex_lock(id-1);
-                CEES_Pthread::condition_signal(id-1);
+	
+	cout << id << " ... Burn In" << endl; 
+	simulator->BurnIn(); 
+	cout << id << " ... Tune/Estimate MH Proposal StepSize" << endl; 
+	simulator->MH_StepSize_Regression(); 
+	cout << id << " ... Simulate " << endl; 
+	simulator->Simulate(); 
+                
+	/* Signal the previous level to start */
+	if (id > 1)
+	{
+        	CEES_Pthread::mutex_lock(id-1);
+        	CEES_Pthread::condition_signal(id-1);
 		CEES_Pthread::flag_turn(id-1, true);
-                CEES_Pthread::mutex_unlock(id-1);
-        }
-	cout << "ring " << id << ": initial ring built done.\n"; 
+       		CEES_Pthread::mutex_unlock(id-1);
+	}
+}
 
-	for (int n=0; n<simulator->simulationL; n++)
-        {
-                if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
-                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
-                // simulator->draw(MULTIPLE_TRY_MH);
-                simulator->draw_block();
-        }
+void *tuning_simulation(void *node_void)
+{
+	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
+	simulator->MH_StepSize_Regression(); 
+	simulator->Simulate(); 
 }
 
 void *simulation(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
-        for (int n=0; n<simulator->simulationL; n++)
-        {
-                if ( (IF_MH_TRACKING && n%MH_TRACKING_FREQUENCY) == 0)
-                        simulator->MH_Tracking_Start(MH_TRACKING_LENGTH, MH_LOW_ACC, MH_HIGH_ACC);
-                // simulator->draw(MULTIPLE_TRY_MH);
-                simulator->draw_block(); 
-        }
+	simulator->Simulate(); 
 }
  

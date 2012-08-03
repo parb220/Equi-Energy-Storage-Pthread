@@ -22,9 +22,10 @@ void TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator)
                 new_HK_1_average += CEES_Node::max_energy[i];
         new_HK_1_average=new_HK_1_average/(int)(CEES_Node::max_energy.size());
 
-	if (new_H0_average < CEES_Node::H[0])
+	if (new_H0_average != CEES_Node::H[0])
 		CEES_Pthread::SetEnergyLevels_GeometricProgression(new_H0_average, HK_1); 
 
+	CEES_Pthread::SetTemperatures_EnergyLevels(T0, HK_1/C); 
 	/*double new_TK_1 = new_HK_1_average * 100;
 	if (new_TK_1 < CEES_Node::T[CEES_Node::K-1] *100)
         	CEES_Node::SetTemperatures_EnergyLevels(T0, new_TK_1);*/

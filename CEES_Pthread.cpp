@@ -10,8 +10,7 @@ CEES_Pthread::CEES_Pthread(int _id) : CEES_Node(_id)
 {
 } 
 
-CEES_Pthread::CEES_Pthread(int _id, CTransitionModel *transition, CEES_Node *next) : 
-CEES_Node(_id, transition, next)
+CEES_Pthread::CEES_Pthread(int _id, CTransitionModel *transition, CEES_Node *next) :  CEES_Node(_id, transition, next)
 {
 }
 
@@ -60,33 +59,29 @@ void CEES_Pthread::Initialize(CModel *initial)
 
 bool CEES_Pthread::Initialize()
 {
-	int sample_id; 
-	double sample_weight; 
-	int level_id=0; 
-	int bin_id = next_level->BinID(level_id); 
-	while(level_id < K && ! storage->DrawSample(bin_id, x_new, GetDataDimension(), sample_id, sample_weight, r)) 
-	{
-		level_id ++; 
-		bin_id = next_level->BinID(level_id); 
-	}
-	if (level_id < K)
-	{
-		CEES_Node::Initialize(x_new, GetDataDimension()); 
-		return true; 
-	}
-	else 
-		return false;
+	return CEES_Node::Initialize((CStorageHead &)(*storage), r); 
 }
 
-void CEES_Pthread::draw(int mMH)
+void CEES_Pthread::draw()
 {
 	CEES_Node::draw(r, (CStorageHead &)(*storage), mMH); 
 }
 
-void CEES_Pthread::draw_block()
+void CEES_Pthread::BurnIn()
 {
-	CEES_Node::draw_block(r, (CStorageHead &)(*storage)); 
+	CEES_Node::BurnIn(r, (CStorageHead &)(*storage), burnInL, mMH); 
 }
+
+void CEES_Pthread::MH_StepSize_Regression()
+{
+	CEES_Node::MH_StepSize_Regression(MHInitialL, MHMaxTime, MHTargetACC, r, mMH); 
+}
+
+void CEES_Pthread::Simulate()
+{
+	CEES_Node::Simulate(r, (CStorageHead &)(*storage), simulationL, depositFreq, mMH); 
+}
+
 
 void CEES_Pthread::SetHigherNodePointer(const CEES_Pthread *next)
 {
