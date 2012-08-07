@@ -47,7 +47,7 @@ int main()
  	Initialize the target distribution as a Gaussian mixture model;
 	Mean Sigma and Weight are stored in files
   	*/
-	string filename_base = "./gaussian_mixture_model."; //"../equi_energy_generic/gaussian_mixture_model."; 
+	string filename_base = "../equi_energy_generic/gaussian_mixture_model."; // "./gaussian_mixture_model.";
 	CMixtureModel target; 
 	if (!Configure_GaussianMixtureModel_File(target, filename_base))
 	{
@@ -114,7 +114,7 @@ int main()
 		simulator[i].mMH = MULTIPLE_TRY_MH; 
 		simulator[i].MHMaxTime = MH_STEPSIZE_TUNING_MAX_TIME; 
 		simulator[i].MHInitialL = MH_TRACKING_LENGTH; 
-		simulator[i].MHTargetACC = MH_TARGET_ACC; 
+		simulator[i].MHTargetACC = exp(log(MH_TARGET_ACC)/(i+1)); 
 		simulator[i].simulationL = ENERGY_LEVEL_TRACKING_WINDOW_LENGTH;
 		simulator[i].depositFreq = DEPOSIT_FREQUENCY; 
 		pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));

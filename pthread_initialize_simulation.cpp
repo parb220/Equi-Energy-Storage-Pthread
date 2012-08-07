@@ -34,10 +34,10 @@ void *initialize_simulate(void *node_void)
 		sigma = new double [CEES_Pthread::GetBlockSize(iBlock)]; 
 		for (int j=0; j<CEES_Pthread::GetBlockSize(iBlock); j++)
 		{
-			if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
+			/*if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
 				sigma[j] = simulator->GetNextLevel()->GetProposal(iBlock)->get_step_size(); 
-			else
-				sigma[j] = INITIAL_SIGMA * sqrt(simulator->GetTemperature()); 
+			else*/
+				sigma[j] = INITIAL_SIGMA * sqrt(simulator->GetTemperature()/CEES_Pthread::GetDataDimension()); 
 		}
 		simulator->SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetBlockSize(iBlock), sigma), iBlock); 
 			delete [] sigma; 
@@ -52,11 +52,11 @@ void *initialize_simulate(void *node_void)
 	simulator->Simulate(); 
                 
 	/* Signal the previous level to start */
-	if (id > 1)
+	if (id > 0)
 	{
         	CEES_Pthread::mutex_lock(id-1);
-        	CEES_Pthread::condition_signal(id-1);
 		CEES_Pthread::flag_turn(id-1, true);
+        	CEES_Pthread::condition_signal(id-1);
        		CEES_Pthread::mutex_unlock(id-1);
 	}
 }
