@@ -164,8 +164,10 @@ int main(int argc, char ** argv)
 	{
 		simulator[i].burnInL = BURN_IN_PERIOD; 
 		simulator[i].mMH = MULTIPLE_TRY_MH; 
-		simulator[i].MHMaxTime = MH_STEPSIZE_TUNING_MAX_TIME; 
-		simulator[i].MHInitialL = MH_TRACKING_LENGTH; 
+		//simulator[i].MHMaxTime = MH_STEPSIZE_TUNING_MAX_TIME; 
+		//simulator[i].MHInitialL = MH_TRACKING_LENGTH; 
+		simulator[i].MHInitialL = 20; 
+		simulator[i].MHMaxTime = 10; 
 		simulator[i].simulationL = ENERGY_LEVEL_TRACKING_WINDOW_LENGTH;
 		simulator[i].depositFreq = DEPOSIT_FREQUENCY; 
 		pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));

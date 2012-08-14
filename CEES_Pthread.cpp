@@ -77,11 +77,15 @@ void CEES_Pthread::MH_StepSize_Estimation()
 	CEES_Node::MH_StepSize_Estimation(MHInitialL, MHMaxTime, r, mMH); 
 }
 
+void CEES_Pthread::MH_StepSize_Tune()
+{
+	CEES_Node::MH_StepSize_Tune(MHInitialL, MHMaxTime, r, mMH);
+}
+
 void CEES_Pthread::Simulate()
 {
 	CEES_Node::Simulate(r, (CStorageHead &)(*storage), simulationL, depositFreq, mMH); 
 }
-
 
 void CEES_Pthread::SetHigherNodePointer(const CEES_Pthread *next)
 {
