@@ -34,10 +34,10 @@ void *initialize_simulate(void *node_void)
 		sigma = new double [CEES_Pthread::GetBlockSize(iBlock)]; 
 		for (int j=0; j<CEES_Pthread::GetBlockSize(iBlock); j++)
 		{
-			/*if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
+			if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
 				sigma[j] = simulator->GetNextLevel()->GetProposal(iBlock)->get_step_size(); 
-			else*/
-				sigma[j] = INITIAL_SIGMA * sqrt(simulator->GetTemperature()/CEES_Pthread::GetDataDimension()); 
+			else
+				sigma[j] = INITIAL_SIGMA * simulator->GetTemperature(); 
 		}
 		simulator->SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetBlockSize(iBlock), sigma), iBlock); 
 			delete [] sigma; 
@@ -47,7 +47,7 @@ void *initialize_simulate(void *node_void)
 	cout << id << " ... Burn In" << endl; 
 	simulator->BurnIn(); 
 	cout << id << " ... Tune/Estimate MH Proposal StepSize" << endl; 
-	simulator->MH_StepSize_Regression(); 
+	simulator->MH_StepSize_Estimation(); 
 	cout << id << " ... Simulate " << endl; 
 	simulator->Simulate(); 
                 
@@ -64,7 +64,7 @@ void *initialize_simulate(void *node_void)
 void *tuning_simulation(void *node_void)
 {
 	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
-	simulator->MH_StepSize_Regression(); 
+	simulator->MH_StepSize_Estimation(); 
 	simulator->Simulate(); 
 }
 

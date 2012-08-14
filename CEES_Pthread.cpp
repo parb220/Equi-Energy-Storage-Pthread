@@ -72,9 +72,9 @@ void CEES_Pthread::BurnIn()
 	CEES_Node::BurnIn(r, (CStorageHead &)(*storage), burnInL, mMH); 
 }
 
-void CEES_Pthread::MH_StepSize_Regression()
+void CEES_Pthread::MH_StepSize_Estimation()
 {
-	CEES_Node::MH_StepSize_Regression(MHInitialL, MHMaxTime, MHTargetACC, r, mMH); 
+	CEES_Node::MH_StepSize_Estimation(MHInitialL, MHMaxTime, r, mMH); 
 }
 
 void CEES_Pthread::Simulate()

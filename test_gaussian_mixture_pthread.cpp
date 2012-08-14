@@ -40,14 +40,65 @@ bool Configure_GaussianMixtureModel_File(CMixtureModel &, const string);
 void *initialize_simulate(void*);
 void *simulation(void*); 
 void *tuning_simulation(void *); 
-void TuneEnergyLevels_UpdateStorage(CEES_Pthread *); 
-int main()
+bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *, double, double); 
+
+void usage(int arc, char **argv)
 {
+        cout << "usage: " << argv[0] << " ";
+        cout << "-d <dimension> \n";
+        cout << "-f <files of the target model> \n";
+        cout << "-p <probability of equi-energy jump> \n";
+        cout << "-h <energy bound of the highest energy level>\n";
+        cout << "-l <simulation length>\n";
+	cout << "-c <C factor to determine temperature bounds according to energy bounds>\n"; 
+	cout << "? this message\n";
+}
+
+int main(int argc, char ** argv)
+{
+	string filename_base = "../equi_energy_generic/gaussian_mixture_model.";
+        int data_dimension = DATA_DIMENSION;
+        double pee = PEE;
+        double h_k_1 = HK_1;
+        int simulation_length =SIMULATION_LENGTH;
+	double c_factor = C; 
+	double mh_target_acc = MH_TARGET_ACC; 
+
+	int opt;
+        while ( (opt = getopt(argc, argv, "d:f:p:h:l:c:?")) != -1)
+        {
+                switch (opt)
+                {
+                        case 'f':
+                                filename_base = string(optarg); break;
+                        case 'd':
+                                data_dimension = atoi(optarg); break;
+                        case 'p':
+                                pee = atof(optarg); break;
+                        case 'h':
+                                h_k_1 = atof(optarg); break;
+                        case 'l':
+                                simulation_length = atoi(optarg); break;
+			case 'c': 
+				c_factor = atof(optarg); break; 
+			case '?':
+			{
+				usage(argc, argv); 
+				exit(-1); 
+			}
+                        default:
+                        {
+                                usage(argc, argv);
+                                exit(-1);
+                        }
+                }
+        }
+
+
 	/*
  	Initialize the target distribution as a Gaussian mixture model;
 	Mean Sigma and Weight are stored in files
   	*/
-	string filename_base = "../equi_energy_generic/gaussian_mixture_model."; // "./gaussian_mixture_model.";
 	CMixtureModel target; 
 	if (!Configure_GaussianMixtureModel_File(target, filename_base))
 	{
@@ -57,13 +108,14 @@ int main()
 
 	/* Initializing CEES_Pthread */ 
 	CEES_Pthread::SetEnergyLevelNumber(NUMBER_ENERGY_LEVEL); 	// Number of energy levels; 
-	CEES_Pthread::SetEquiEnergyJumpProb(PEE);			// Probability for equal energy jump
-	CEES_Pthread::SetDataDimension(DATA_DIMENSION); 		// Data dimension for simulation
+	CEES_Pthread::SetEquiEnergyJumpProb(pee);			// Probability for equal energy jump
+	CEES_Pthread::SetDataDimension(data_dimension); 		// Data dimension for simulation
 	CEES_Pthread::ultimate_target = &target;	
 	
-	CEES_Pthread::SetEnergyLevels_GeometricProgression(H0, HK_1);
+	CEES_Pthread::SetEnergyLevels_GeometricProgression(H0, h_k_1);
 	CEES_Pthread::InitializeMinMaxEnergy(ENERGY_TRACKING_NUMBER);	// For tuning energy levels based on newly identified min_energy 
-	CEES_Pthread::SetTemperatures_EnergyLevels(T0, C, true); 
+	CEES_Pthread::SetTemperatures_EnergyLevels(T0, c_factor, true); 
+	CEES_Pthread::SetTargetAcceptanceRate(mh_target_acc); 
 	CEES_Pthread::SetPthreadParameters(NUMBER_ENERGY_LEVEL);	// Pthread condition and mutex
 	
 	if (MH_BLOCK)							// MH in blocks
@@ -85,7 +137,7 @@ int main()
 	int get_marker = 10000;	// Keep get_marker samples in memory for draw 
 	int put_marker = 10000;	// Dump every put_marker samples
 	int number_bins = NUMBER_ENERGY_LEVEL * NUMBER_ENERGY_LEVEL;   
-	CSampleIDWeight::SetDataDimension(DATA_DIMENSION);	// Data dimension for storage (put and get) 
+	CSampleIDWeight::SetDataDimension(data_dimension);	// Data dimension for storage (put and get) 
 	CStorageHeadPthread storage(run_id, get_marker, put_marker, number_bins, string("/home/f1hxw01/equal_energy_hw/equi_energy_storage_data/")); 
 	storage.makedir();
 	
@@ -114,7 +166,6 @@ int main()
 		simulator[i].mMH = MULTIPLE_TRY_MH; 
 		simulator[i].MHMaxTime = MH_STEPSIZE_TUNING_MAX_TIME; 
 		simulator[i].MHInitialL = MH_TRACKING_LENGTH; 
-		simulator[i].MHTargetACC = exp(log(MH_TARGET_ACC)/(i+1)); 
 		simulator[i].simulationL = ENERGY_LEVEL_TRACKING_WINDOW_LENGTH;
 		simulator[i].depositFreq = DEPOSIT_FREQUENCY; 
 		pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));
@@ -127,20 +178,21 @@ int main()
 	while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
         {       
 		cout << "Energy level tuning: " << nEnergyLevelTuning << " for " << ENERGY_LEVEL_TRACKING_WINDOW_LENGTH << " steps.\n"; 
-		TuneEnergyLevels_UpdateStorage(simulator);
-		nEnergyLevelTuning ++;
+		TuneEnergyLevels_UpdateStorage(simulator, c_factor, mh_target_acc);
 		for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
 		{
 			simulator[i].simulationL = ENERGY_LEVEL_TRACKING_WINDOW_LENGTH; 
-                        pthread_create(&(thread[i]), NULL, tuning_simulation, (void*)(simulator+i));       
-                }
-               	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)				pthread_join(thread[i], NULL);
+                       	pthread_create(&(thread[i]), NULL, tuning_simulation, (void*)(simulator+i));       
+               	}
+               	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)			
+			pthread_join(thread[i], NULL);
+		nEnergyLevelTuning ++;
 	}
 	// run through simulation
-	cout << "Simulation for " << SIMULATION_LENGTH << " steps.\n"; 
+	cout << "Simulation for " << simulation_length << " steps.\n"; 
 	for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
         {
-		simulator[i].simulationL = SIMULATION_LENGTH ;
+		simulator[i].simulationL = simulation_length ;
                	pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
         }
         for (int i=CEES_Pthread::GetEnergyLevelNumber()-1; i>=0; i--)
@@ -162,7 +214,7 @@ int main()
         oFile << "Tune Energy Level Window Length:\t" << ENERGY_LEVEL_TRACKING_WINDOW_LENGTH << endl;
         oFile << "Tune Energy Level Number:\t" << ENERGY_LEVEL_TUNING_MAX_TIME << endl;
         oFile << "Deposit Frequency:\t" << DEPOSIT_FREQUENCY << endl;
-        oFile << "MH Target Probability:\t" << MH_TARGET_ACC << endl;
+        oFile << "MH Target Probability:\t" << mh_target_acc << endl;
         oFile << "MH Initial Window Length:\t" << MH_TRACKING_LENGTH << endl;
         oFile << "MH Window Number:\t" << MH_STEPSIZE_TUNING_MAX_TIME << endl;
         summary(oFile, storage);
