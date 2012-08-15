@@ -23,7 +23,7 @@ bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, double c_factor, do
 
 	double new_H0 = CEES_Node::min_energy[0] < CEES_Node::H[0] ? CEES_Node::min_energy[0] : CEES_Node::H[0]; 
 	// double new_HK_1 = CEES_Node::max_energy[0] < 1.0e3 ?CEES_Node::max_energy[0]: 1.0e3;
-	double new_HK_1 = CEES_Node::max_energy[0] < CEES_Node::H[CEES_Node::K-1] ? CEES_Node::max_energy[0]: CEES_Node::H[CEES_Node::K-1];
+	double new_HK_1 = CEES_Node::max_energy[0] < CEES_Node::H[CEES_Node::K-1] ?CEES_Node::max_energy[0]: CEES_Node::H[CEES_Node::K-1];
 
 	if (new_H0 < CEES_Node::H[0] || new_HK_1 > CEES_Node::H[CEES_Node::K-1])
 	{
