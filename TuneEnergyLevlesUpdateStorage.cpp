@@ -29,9 +29,14 @@ bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, double c_factor, do
                 new_HK_1_average += CEES_Node::max_energy[i];
         new_HK_1_average=new_HK_1_average/(int)(CEES_Node::max_energy.size());*/
 
-	double new_H0 = CEES_Node::min_energy[0] < CEES_Node::H[0] ? CEES_Node::min_energy[0] : CEES_Node::H[0]; 
+	double global_min, global_max; 
+	global_min = simulator[0].min_energy[0]; 
+	global_max = simulator[CEES_Node::K-1].max_energy[0]; 
+	for (int i=1; i<CEES_Node::K; i++)
+		global_min = global_min < simulator[i].min_energy[0] ? global_min : simulator[i].min_energy[0]; 
+	double new_H0 = global_min < CEES_Node::H[0] ? global_min : CEES_Node::H[0]; 
 	// double new_HK_1 = CEES_Node::max_energy[0] < 1.0e3 ?CEES_Node::max_energy[0]: 1.0e3;
-	double new_HK_1 = CEES_Node::max_energy[0] < CEES_Node::H[CEES_Node::K-1] ?CEES_Node::max_energy[0]: CEES_Node::H[CEES_Node::K-1];
+	double new_HK_1 = global_max < CEES_Node::H[CEES_Node::K-1] ? global_max : CEES_Node::H[CEES_Node::K-1];
 
 	if (new_H0 < CEES_Node::H[0] || new_HK_1 > CEES_Node::H[CEES_Node::K-1])
 	{

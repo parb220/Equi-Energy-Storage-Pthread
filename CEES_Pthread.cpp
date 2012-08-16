@@ -2,7 +2,7 @@
 
 vector <pthread_cond_t> CEES_Pthread::condition; 
 vector <pthread_mutex_t> CEES_Pthread::mutex; 
-pthread_mutex_t CEES_Pthread::global_mutex; 
+// pthread_mutex_t CEES_Pthread::global_mutex; 
 vector < bool> CEES_Pthread::flag; 
 CStorageHeadPthread* CEES_Pthread::storage;
 
@@ -29,7 +29,7 @@ void CEES_Pthread::SetPthreadParameters(int n)
 		pthread_mutex_init(&(mutex[i]), NULL); 
 		flag[i] = false; 
 	}
-	pthread_mutex_init(&global_mutex, NULL); 
+	// pthread_mutex_init(&global_mutex, NULL); 
 }
 
 int CEES_Pthread::mutex_lock(int _id)
@@ -94,9 +94,9 @@ void CEES_Pthread::SetHigherNodePointer(const CEES_Pthread *next)
 
 void CEES_Pthread::UpdateMinMaxEnergy(double _new_energy)
 {
-	pthread_mutex_lock(&global_mutex); 
+	// pthread_mutex_lock(&global_mutex); 
 	CEES_Node::UpdateMinMaxEnergy(_new_energy); 
-	pthread_mutex_unlock(&global_mutex); 
+	// pthread_mutex_unlock(&global_mutex); 
 }
 
 void CEES_Pthread::AssignSamplesGeneratedSoFar()
