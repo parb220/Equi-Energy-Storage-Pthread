@@ -103,3 +103,8 @@ void CEES_Pthread::AssignSamplesGeneratedSoFar()
 {
 	CEES_Node::AssignSamplesGeneratedSoFar((CStorageHead &)(*storage)); 
 }
+
+void CEES_Pthread::DisregardHistorySamples()
+{
+	CEES_Node::DisregardHistorySamples((CStorageHead &)(*storage)); 
+}

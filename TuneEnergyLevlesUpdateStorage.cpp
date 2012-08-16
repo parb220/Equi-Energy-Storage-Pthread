@@ -10,6 +10,14 @@ void *adjust(void *node_void)
 	simulator->AdjustLocalTarget(); 
 	simulator->AssignSamplesGeneratedSoFar();
 }
+
+void *adjust_clear(void *node_void)
+{
+        CEES_Pthread *simulator = (CEES_Pthread *) node_void;
+        simulator->AdjustLocalTarget();
+        simulator->DisregardHistorySamples();
+}
+
 bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, double c_factor, double mh_target_acc)
 {
 	/*double new_H0_average = 0; 
@@ -36,14 +44,15 @@ bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, double c_factor, do
 	
 	// Re-adjust local target distribution and process samples that have been generated; 
 		pthread_t *thread = new pthread_t[CEES_Pthread::K]; 
-		simulator->storage->CreateTemporaryBin(); 
+		// simulator->storage->CreateTemporaryBin(); 
 		for (int i=0; i<CEES_Pthread::K; i++)
-			pthread_create(&(thread[i]), NULL, adjust, (void *)(simulator+i)); 
+			// pthread_create(&(thread[i]), NULL, adjust, (void *)(simulator+i)); 
+			pthread_create(&(thread[i]), NULL, adjust_clear, (void*)(simulator+i)); 
 	
 		for (int i=0; i<CEES_Pthread::K; i++)
 			pthread_join(thread[i], NULL); 
 	
-		simulator->storage->ClearTemporaryBin(); 
+		// simulator->storage->ClearTemporaryBin(); 
 		delete [] thread; 
 		return true; 
 	}
