@@ -47,8 +47,8 @@ void *initialize_simulate(void *node_void)
 	cout << id << " ... Burn In" << endl; 
 	simulator->BurnIn(); 
 	cout << id << " ... Tune/Estimate MH Proposal StepSize" << endl; 
-	// simulator->MH_StepSize_Estimation(); // regression 
-	simulator->MH_StepSize_Tune(); 		// Dan's adaptive strategy
+	simulator->MH_StepSize_Regression(); // regression 
+	//simulator->MH_StepSize_Tune(); 		// Dan's adaptive strategy
 	cout << id << " ... Simulate " << endl; 
 	simulator->Simulate(); 
                 
@@ -65,8 +65,8 @@ void *initialize_simulate(void *node_void)
 void *tuning_simulation(void *node_void)
 {
 	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
-	// simulator->MH_StepSize_Estimation(); 	// regression
-	simulator->MH_StepSize_Tune(); 		// Dan's adaptive strategy
+	simulator->MH_StepSize_Regression(); 	// regression
+	//simulator->MH_StepSize_Tune(); 		// Dan's adaptive strategy
 	simulator->Simulate(); 
 }
 

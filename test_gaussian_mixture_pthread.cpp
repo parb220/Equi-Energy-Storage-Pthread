@@ -44,13 +44,14 @@ bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *, double, double);
 
 void usage(int arc, char **argv)
 {
-        cout << "usage: " << argv[0] << " ";
+        cout << "usage: " << argv[0] << endl;
         cout << "-d <dimension> \n";
         cout << "-f <files of the target model> \n";
         cout << "-p <probability of equi-energy jump> \n";
         cout << "-h <energy bound of the highest energy level>\n";
         cout << "-l <simulation length>\n";
 	cout << "-c <C factor to determine temperature bounds according to energy bounds>\n"; 
+	cout << "-t <number of times min and max energy bounds are tracked and tuned>\n"; 
 	cout << "? this message\n";
 }
 
@@ -63,9 +64,10 @@ int main(int argc, char ** argv)
         int simulation_length =SIMULATION_LENGTH;
 	double c_factor = C; 
 	double mh_target_acc = MH_TARGET_ACC; 
+	double energy_level_tuning_max_time = ENERGY_LEVEL_TUNING_MAX_TIME; 
 
 	int opt;
-        while ( (opt = getopt(argc, argv, "d:f:p:h:l:c:?")) != -1)
+        while ( (opt = getopt(argc, argv, "d:f:p:h:l:c:t:?")) != -1)
         {
                 switch (opt)
                 {
@@ -81,6 +83,8 @@ int main(int argc, char ** argv)
                                 simulation_length = atoi(optarg); break;
 			case 'c': 
 				c_factor = atof(optarg); break; 
+			case 't':
+				energy_level_tuning_max_time = atoi(optarg); break; 
 			case '?':
 			{
 				usage(argc, argv); 
@@ -164,10 +168,10 @@ int main(int argc, char ** argv)
 	{
 		simulator[i].burnInL = BURN_IN_PERIOD; 
 		simulator[i].mMH = MULTIPLE_TRY_MH; 
-		//simulator[i].MHMaxTime = MH_STEPSIZE_TUNING_MAX_TIME; 
-		//simulator[i].MHInitialL = MH_TRACKING_LENGTH; 
-		simulator[i].MHInitialL = 20; 
-		simulator[i].MHMaxTime = 10; 
+		simulator[i].MHMaxTime = MH_STEPSIZE_TUNING_MAX_TIME; 
+		simulator[i].MHInitialL = MH_TRACKING_LENGTH; 
+		//simulator[i].MHInitialL = 20; 
+		//simulator[i].MHMaxTime = 10; 
 		simulator[i].simulationL = ENERGY_LEVEL_TRACKING_WINDOW_LENGTH;
 		simulator[i].depositFreq = DEPOSIT_FREQUENCY; 
 		pthread_create(&(thread[i]), NULL, initialize_simulate, (void*)(simulator+i));
@@ -177,7 +181,7 @@ int main(int argc, char ** argv)
 		pthread_join(thread[i], NULL);
 
 	int nEnergyLevelTuning = 0;
-	while (nEnergyLevelTuning < ENERGY_LEVEL_TUNING_MAX_TIME)
+	while (nEnergyLevelTuning < energy_level_tuning_max_time)
         {       
 		cout << "Energy level tuning: " << nEnergyLevelTuning << " for " << ENERGY_LEVEL_TRACKING_WINDOW_LENGTH << " steps.\n"; 
 		TuneEnergyLevels_UpdateStorage(simulator, c_factor, mh_target_acc);
