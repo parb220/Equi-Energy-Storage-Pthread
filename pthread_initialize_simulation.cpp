@@ -27,20 +27,22 @@ void *initialize_simulate(void *node_void)
         }
         else
                 simulator->Initialize(mode, CEES_Pthread::GetDataDimension()); 
-	// Set up proposal model 
-	double *sigma; 
+	// Set up proposal model
+	int dim_cum_sum =0;  
+	double *sigma;
 	for (int iBlock =0; iBlock < CEES_Pthread::GetNumberBlocks(); iBlock++)
 	{
-		sigma = new double [CEES_Pthread::GetBlockSize(iBlock)]; 
+		sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
 		for (int j=0; j<CEES_Pthread::GetBlockSize(iBlock); j++)
 		{
 			if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
 				sigma[j] = simulator->GetNextLevel()->GetProposal(iBlock)->get_step_size(); 
 			else
-				sigma[j] = INITIAL_SIGMA * simulator->GetTemperature(); 
+				sigma[j] = simulator->MHProposalScale[dim_cum_sum+j]; 
 		}
+		dim_cum_sum += CEES_Pthread::GetBlockSize(iBlock); 
 		simulator->SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetBlockSize(iBlock), sigma), iBlock); 
-			delete [] sigma; 
+		delete [] sigma; 
 	}
 	delete [] mode; 
 	
