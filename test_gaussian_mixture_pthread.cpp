@@ -238,8 +238,6 @@ int main(int argc, char ** argv)
 			simulator[i].burnInL = parameter.burn_in_period; 
 			simulator[i].MHMaxTime = parameter.mh_stepsize_tuning_max_time; 
 			simulator[i].MHInitialL = parameter.mh_tracking_length; 
-			//simulator[i].MHInitialL = 20; 
-			//simulator[i].MHMaxTime = 10; 
 			simulator[i].MHProposalScale = parameter.GetMHProposalScale(i); 
 			simulator[i].simulationL = parameter.energy_level_tracking_window_length; 
 
