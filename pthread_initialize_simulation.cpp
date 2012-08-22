@@ -67,8 +67,8 @@ void *initialize_simulate(void *node_void)
 void *tuning_simulation(void *node_void)
 {
 	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
-	simulator->MH_StepSize_Regression(); 	// regression
-	//simulator->MH_StepSize_Tune(); 		// Dan's adaptive strategy
+	//simulator->MH_StepSize_Regression(); 	// regression
+	simulator->MH_StepSize_Tune(); 		// Dan's adaptive strategy
 	simulator->Simulate(); 
 }
 

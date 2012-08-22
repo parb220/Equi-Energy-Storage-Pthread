@@ -56,7 +56,7 @@ void usage(int arc, char **argv)
         cout << "-l <simulation length>\n";
 	cout << "-c <C factor to determine temperature bounds according to energy bounds>\n"; 
 	cout << "-t <number of times min and max energy bounds are tracked and tuned>\n"; 
-	cout << "-b <path>: directory to store samples\b";
+	cout << "-b <path>: directory to store samples\n";
 	cout << "? this message\n";
 }
 
