@@ -36,7 +36,7 @@ void *initialize_simulate(void *node_void)
 		for (int j=0; j<CEES_Pthread::GetBlockSize(iBlock); j++)
 		{
 			if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
-				sigma[j] = simulator->GetNextLevel()->GetProposal(iBlock)->get_step_size(); 
+				sigma[j] = simulator->GetNextLevel()->GetProposal(iBlock)->get_step_size(j); 
 			else
 				sigma[j] = simulator->MHProposalScale[dim_cum_sum+j]; 
 		}
