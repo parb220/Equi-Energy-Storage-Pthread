@@ -42,7 +42,7 @@ bool Configure_GaussianMixtureModel_File(CMixtureModel &, const string);
 void *initialize_simulate(void*);
 void *simulation(void*); 
 void *tuning_simulation(void *); 
-bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *, double, double); 
+bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *, CParameterPackage &); 
 
 void usage(int arc, char **argv)
 {
@@ -251,7 +251,7 @@ int main(int argc, char ** argv)
 		while (nEnergyLevelTuning < parameter.energy_level_tuning_max_time)
         	{       
 			cout << "Energy level tuning: " << nEnergyLevelTuning << " for " << parameter.energy_level_tracking_window_length << " steps.\n"; 
-			TuneEnergyLevels_UpdateStorage(simulator, parameter.c_factor, parameter.mh_target_acc);
+			TuneEnergyLevels_UpdateStorage(simulator, parameter);
 			for (int i=parameter.number_energy_level-1; i>=0; i--)
 			{
 				simulator[i].simulationL = parameter.energy_level_tracking_window_length; 

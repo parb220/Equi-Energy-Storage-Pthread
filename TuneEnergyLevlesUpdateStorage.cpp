@@ -2,6 +2,7 @@
 #include "CEES_Pthread.h"
 #include "CStorageHeadPthread.h"
 #include "CBoundedModel.h"
+#include "CParameterPackage.h"
 
 using namespace std;
 void *adjust(void *node_void)
@@ -18,7 +19,7 @@ void *adjust_clear(void *node_void)
         simulator->DisregardHistorySamples();
 }
 
-bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, double c_factor, double mh_target_acc)
+bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, CParameterPackage &parameter)
 {
 	/*double new_H0_average = 0; 
 	for (int i=0; i<(int)(CEES_Node::min_energy.size()); i++)
@@ -40,11 +41,19 @@ bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, double c_factor, do
 
 	if (new_H0 < CEES_Node::H[0] || new_HK_1 > CEES_Node::H[CEES_Node::K-1])
 	{
-		CEES_Pthread::SetEnergyLevels_GeometricProgression(new_H0, new_HK_1); 
-		CEES_Pthread::SetTemperatures_EnergyLevels(CEES_Node::T[0], c_factor, true); 
-		CEES_Pthread::SetTargetAcceptanceRate(mh_target_acc); 
-	/*double new_TK_1 = new_HK_1_average * 100;
-	if (new_TK_1 < CEES_Node::T[CEES_Node::K-1] *100)
+		parameter.h0 = new_H0; 
+		parameter.hk_1 = new_HK_1; 
+		parameter.SetEnergyBound();
+                parameter.SetTemperature();
+		double *temp_buffer_float=new double[parameter.number_energy_level];
+        	parameter.GetEnergyBound(temp_buffer_float, parameter.number_energy_level);
+        	CEES_Pthread::SetEnergyLevels(temp_buffer_float, parameter.number_energy_level);
+        	parameter.GetTemperature(temp_buffer_float, parameter.number_energy_level);
+        	CEES_Pthread::SetTemperatures(temp_buffer_float, parameter.number_energy_level);
+		delete [] temp_buffer_float;
+		
+		/*double new_TK_1 = new_HK_1_average * 100;
+		if (new_TK_1 < CEES_Node::T[CEES_Node::K-1] *100)
         	CEES_Node::SetTemperatures_EnergyLevels(T0, new_TK_1);*/
 	
 	// Re-adjust local target distribution and process samples that have been generated; 

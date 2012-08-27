@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void *initialize_simulate(void *node_void)
+void initialize_simulate(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
         int id = simulator->GetID();
@@ -64,7 +64,7 @@ void *initialize_simulate(void *node_void)
 	}
 }
 
-void *tuning_simulation(void *node_void)
+void tuning_simulation(void *node_void)
 {
 	CEES_Pthread *simulator = (CEES_Pthread *)node_void; 
 	//simulator->MH_StepSize_Regression(); 	// regression
@@ -72,7 +72,7 @@ void *tuning_simulation(void *node_void)
 	simulator->Simulate(); 
 }
 
-void *simulation(void *node_void)
+void simulation(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
 	simulator->Simulate(); 
