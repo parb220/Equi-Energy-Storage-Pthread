@@ -54,7 +54,7 @@ int CEES_Pthread::condition_signal(int _id)
 
 void CEES_Pthread::Initialize(CModel *initial)
 {
-	CEES_Node::Initialize(initial, r); 
+	CEES_Node::Initialize(r, initial); 
 }
 
 bool CEES_Pthread::Initialize()
