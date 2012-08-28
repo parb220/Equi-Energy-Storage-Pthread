@@ -72,11 +72,6 @@ void CEES_Pthread::BurnIn()
 	CEES_Node::BurnIn(r, (CStorageHead &)(*storage), burnInL, mMH); 
 }
 
-void CEES_Pthread::MH_StepSize_Regression()
-{
-	CEES_Node::MH_StepSize_Regression(MHInitialL, MHMaxTime, r, mMH); 
-}
-
 void CEES_Pthread::MH_StepSize_Tune()
 {
 	CEES_Node::MH_StepSize_Tune(MHInitialL, MHMaxTime, r, mMH);

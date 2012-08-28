@@ -231,7 +231,7 @@ int main(int argc, char ** argv)
 	temp_buffer_float = new double [parameter.data_dimension]; 
 	if (!if_continue)
 	{
-		/* Initializing - burn-in - MH-stepsize-Regression -- simulate*/
+		/* Initializing - burn-in - MH-stepsize-Tuning -- simulate*/
 		cout << "Initialize, burn in, tune/estimate MH stepsize and simulate for " << ENERGY_LEVEL_TRACKING_WINDOW_LENGTH << " steps.\n"; 
 		for (int i=parameter.number_energy_level-1; i>=0; i--)
 		{
