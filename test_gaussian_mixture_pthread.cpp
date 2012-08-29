@@ -31,7 +31,6 @@
 #include "CTransitionModel.h"
 #include "CTransitionModel_SimpleGaussian.h"
 #include "CEES_Pthread.h"
-#include "CSampleIDWeight.h"
 #include "CStorageHead.h"
 #include "CStorageHeadPthread.h"
 #include "CParameterPackage.h"
@@ -181,7 +180,6 @@ int main(int argc, char ** argv)
 	}
 
 	/* Initialize Storage  */
-	CSampleIDWeight::SetDataDimension(parameter.data_dimension);	// Data dimension for storage (put and get) 
 	CStorageHeadPthread storage(parameter.run_id, parameter.get_marker, parameter.put_marker, parameter.number_bins,storage_filename_base); 
 	if (if_continue)
 		storage.restore(parameter); 
