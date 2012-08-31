@@ -265,8 +265,7 @@ int main(int argc, char ** argv)
 		int dim_cum_sum; 
 		for (int i=parameter.number_energy_level-1; i>=0; i--)
 		{
-			parameter.GetCurrentState(i, temp_buffer_float, parameter.data_dimension); 
-			simulator[i].Initialize(temp_buffer_float, parameter.data_dimension); 
+			simulator[i].Initialize(parameter.GetCurrentState(i)); 
 			parameter.GetMHProposalScale(i, temp_buffer_float, parameter.data_dimension); 
 			dim_cum_sum = 0; 
 			for (int iBlock=0; iBlock<parameter.number_block; iBlock++)

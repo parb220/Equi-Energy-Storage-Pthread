@@ -10,8 +10,8 @@ void initialize_simulate(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
         int id = simulator->GetID();
-	double *mode = new double [CEES_Pthread::GetDataDimension()];
-	CEES_Pthread::ultimate_target->GetMode(mode, CEES_Pthread::GetDataDimension()); 
+	CSampleIDWeight mode; 
+	mode = CEES_Pthread::ultimate_target->GetMode(); 
 
         /* Wait till the next-level's initial ring is built up */
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
@@ -23,10 +23,10 @@ void initialize_simulate(void *node_void)
 		CEES_Pthread::flag_turn(id, false); 
 		cout << id << " ... Initializing" << endl; 
                 if (!simulator->Initialize() )
-                        simulator->Initialize(mode, CEES_Pthread::GetDataDimension()); 
+                        simulator->Initialize(mode); 
         }
         else
-                simulator->Initialize(mode, CEES_Pthread::GetDataDimension()); 
+                simulator->Initialize(mode); 
 	// Set up proposal model
 	int dim_cum_sum =0;  
 	double *sigma;
@@ -44,7 +44,6 @@ void initialize_simulate(void *node_void)
 		simulator->SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetBlockSize(iBlock), sigma), iBlock); 
 		delete [] sigma; 
 	}
-	delete [] mode; 
 	
 	cout << id << " ... Burn In" << endl; 
 	simulator->BurnIn(); 
