@@ -11,7 +11,7 @@ void initialize_simulate(void *node_void)
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
         int id = simulator->GetID();
 	CSampleIDWeight mode; 
-	mode = CEES_Pthread::ultimate_target->GetMode(); 
+	CEES_Pthread::ultimate_target->GetMode(mode); 
 
         /* Wait till the next-level's initial ring is built up */
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
