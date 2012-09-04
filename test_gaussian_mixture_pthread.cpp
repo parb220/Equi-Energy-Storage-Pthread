@@ -1,3 +1,4 @@
+
 /* Test: 
  * CEquiEnergy
  * CModel
@@ -5,6 +6,7 @@
  * CTransitionModel
  * CSimpleGaussianModel
  * CTransitionModel_SimpleGaussian
+ * CTransitionModel_Gaussian
  * CUniformModel
  * CBoundedModel
  * CEES_Head
@@ -25,11 +27,11 @@
 #include "equi_energy_setup_constant.h"
 #include "CMixtureModel.h"
 #include "CSimpleGaussianModel.h"
-#include "CEquiEnergy.h"
 #include "CUniformModel.h"
 #include "CBoundedModel.h"
 #include "CTransitionModel.h"
 #include "CTransitionModel_SimpleGaussian.h"
+#include "CTransitionModel_Gaussian.h"
 #include "CEES_Pthread.h"
 #include "CStorageHead.h"
 #include "CStorageHeadPthread.h"
@@ -157,14 +159,25 @@ int main(int argc, char ** argv)
                 parameter.deposit_frequency = DEPOSIT_FREQUENCY;
 
 		if (MH_BLOCK)
+		{
                         parameter.number_block = parameter.data_dimension;
+                        /*parameter.number_block = parameter.data_dimension/2;
+			blockSize = new int[parameter.number_block]; 
+			for (int i=0; i<parameter.number_block; i++)
+				blockSize[i] = 2; */
+		}
                 else
+		{
                         parameter.number_block = 1;
+			/*blockSize = new int[parameter.number_block]; 
+			blockSize[0] = parameter.data_dimension; */
+		}
                 parameter.SetBlock();
                 parameter.SetEnergyBound();
                 parameter.SetTemperature();
                 parameter.SetMHProposalScale();
                 parameter.SetCurrentState(r);
+		// delete blockSize; 
 	}
 	parameter.simulation_length = _simulation_length; 
 
@@ -271,7 +284,8 @@ int main(int argc, char ** argv)
 			dim_cum_sum = 0; 
 			for (int iBlock=0; iBlock<parameter.number_block; iBlock++)
 			{
-				simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(parameter.GetBlockSize(iBlock), temp_buffer_float+dim_cum_sum), iBlock); 
+				simulator[i].SetProposal(new CTransitionModel_SimpleGaussian(parameter.GetBlockSize(iBlock), temp_buffer_float+dim_cum_sum), iBlock);
+				//simulator[i].SetProposal(new CTransitionModel_Gaussian(parameter.GetBlockSize(iBlock), temp_buffer_float+dim_cum_sum), iBlock); 
 				dim_cum_sum += parameter.GetBlockSize(iBlock); 
 			}		
 		}

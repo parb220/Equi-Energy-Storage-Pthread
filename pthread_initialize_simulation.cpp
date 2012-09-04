@@ -2,6 +2,7 @@
 #include "equi_energy_setup_constant.h"
 #include "CEES_Pthread.h"
 #include "CTransitionModel_SimpleGaussian.h"
+#include "CTransitionModel_Gaussian.h"
 #include "CUniformModel.h"
 
 using namespace std;
@@ -32,7 +33,7 @@ void initialize_simulate(void *node_void)
 	double *sigma;
 	for (int iBlock =0; iBlock < CEES_Pthread::GetNumberBlocks(); iBlock++)
 	{
-		sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
+		// sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
 		for (int j=0; j<CEES_Pthread::GetBlockSize(iBlock); j++)
 		{
 			if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
@@ -42,6 +43,7 @@ void initialize_simulate(void *node_void)
 		}
 		dim_cum_sum += CEES_Pthread::GetBlockSize(iBlock); 
 		simulator->SetProposal(new CTransitionModel_SimpleGaussian(CEES_Pthread::GetBlockSize(iBlock), sigma), iBlock); 
+		// simulator->SetProposal(new CTransitionModel_Gaussian(CEES_Pthread::GetBlockSize(iBlock), sigma), iBlock); 
 		delete [] sigma; 
 	}
 	
