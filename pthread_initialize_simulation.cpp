@@ -33,7 +33,7 @@ void initialize_simulate(void *node_void)
 	double *sigma;
 	for (int iBlock =0; iBlock < CEES_Pthread::GetNumberBlocks(); iBlock++)
 	{
-		// sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
+		sigma = new double[CEES_Pthread::GetBlockSize(iBlock)]; 
 		for (int j=0; j<CEES_Pthread::GetBlockSize(iBlock); j++)
 		{
 			if (id < CEES_Pthread::GetEnergyLevelNumber()-1)
