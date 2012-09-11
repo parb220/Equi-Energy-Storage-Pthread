@@ -94,11 +94,6 @@ void CEES_Pthread::UpdateMinMaxEnergy(double _new_energy)
 	// pthread_mutex_unlock(&global_mutex); 
 }
 
-void CEES_Pthread::AssignSamplesGeneratedSoFar()
-{
-	CEES_Node::AssignSamplesGeneratedSoFar((CStorageHead &)(*storage)); 
-}
-
 void CEES_Pthread::DisregardHistorySamples()
 {
 	CEES_Node::DisregardHistorySamples((CStorageHead &)(*storage)); 

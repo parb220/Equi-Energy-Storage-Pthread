@@ -5,12 +5,6 @@
 #include "CParameterPackage.h"
 
 using namespace std;
-void *adjust(void *node_void)
-{
-	CEES_Pthread *simulator = (CEES_Pthread *) node_void; 
-	simulator->AdjustLocalTarget(); 
-	simulator->AssignSamplesGeneratedSoFar();
-}
 
 void *adjust_clear(void *node_void)
 {
