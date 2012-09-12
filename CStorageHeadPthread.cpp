@@ -1,6 +1,6 @@
 #include "CStorageHeadPthread.h"
 
-CStorageHeadPthread::CStorageHeadPthread(int _run_id, int _get_marker, int _put_marker, int _number_bins, string file) : CStorageHead(_run_id, _get_marker, _put_marker, _number_bins, file)
+CStorageHeadPthread::CStorageHeadPthread(int _run_id, int _get_marker, int _put_marker, int _number_bins, string file, int _node_index) : CStorageHead(_run_id, _get_marker, _put_marker, _number_bins, file, _node_index)
 {
 	mutex.resize(_number_bins); 
 	for (int i=0; i<(int)(mutex.size()); i++)
