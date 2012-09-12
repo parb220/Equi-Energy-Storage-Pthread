@@ -48,14 +48,15 @@ void usage(int arc, char **argv)
         cout << "usage: " << argv[0] << endl;
 	cout << "-i <id>: id of simulation run\n";
         cout << "-y: to continue a previous simulation run (when -i is provided)\n";
-        cout << "-d <dimension> \n";
-        cout << "-f <files of the target model> \n";
-        cout << "-p <probability of equi-energy jump> \n";
-        cout << "-h <energy bound of the highest energy level>\n";
-        cout << "-l <simulation length>\n";
-	cout << "-c <C factor to determine temperature bounds according to energy bounds>\n"; 
-	cout << "-t <number of times min and max energy bounds are tracked and tuned>\n"; 
+        cout << "-d <dimension>: dimension of the samples \n";
+        cout << "-f <file>: prefix of the files of the target model \n";
+        cout << "-p <probability>: probability of equi-energy jump \n";
+        cout << "-h <energy>: energy bound of the highest energy level\n";
+        cout << "-l <length>: simulation length\n";
+	cout << "-c <C factor>: to determine temperature bounds according to energy bounds\n"; 
+	cout << "-t <number>: number of times min and max energy bounds are tracked and tuned\n"; 
 	cout << "-b <path>: directory to store samples\n";
+	cout << "-e <level>: highest energy level to run simulation\n";
 	cout << "? this message\n";
 }
 
@@ -81,9 +82,10 @@ int main(int argc, char ** argv)
 	double _c_factor = C; 
 	double _mh_target_acc = MH_TARGET_ACC; 
 	double _energy_level_tuning_max_time = ENERGY_LEVEL_TUNING_MAX_TIME; 
+	int highest_level = NUMBER_ENERGY_LEVEL-1; 
 
 	int opt;
-        while ( (opt = getopt(argc, argv, "i:yd:f:p:h:l:c:t:b:?")) != -1)
+        while ( (opt = getopt(argc, argv, "i:yd:f:p:h:l:c:t:b:e:?")) != -1)
         {
                 switch (opt)
                 {
@@ -107,6 +109,8 @@ int main(int argc, char ** argv)
 				_c_factor = atof(optarg); break; 
 			case 't':
 				_energy_level_tuning_max_time = atoi(optarg); break; 
+			case 'e':
+				highest_level = atoi(optarg); break; 
 			case '?':
 			{
 				usage(argc, argv); 
@@ -167,6 +171,8 @@ int main(int argc, char ** argv)
                 parameter.SetCurrentState(r);
 	}
 	parameter.simulation_length = _simulation_length; 
+	if (!if_continue || highest_level <0 || highest_level >= parameter.number_energy_level)
+		highest_level = parameter.number_energy_level -1; 
 
 	/*
  	Initialize the target distribution as a Gaussian mixture model;
@@ -280,12 +286,12 @@ int main(int argc, char ** argv)
 
 	// run through simulation
 	cout << "Simulation for " << parameter.simulation_length << " steps.\n"; 
-	for (int i=parameter.number_energy_level-1; i>=0; i--)
+	for (int i=highest_level; i>=0; i--)
         {
 		simulator[i].simulationL = parameter.simulation_length ;
                	pthread_create(&(thread[i]), NULL, simulation, (void*)(simulator+i));
         }
-        for (int i=parameter.number_energy_level-1; i>=0; i--)
+        for (int i=highest_level; i>=0; i--)
                	pthread_join(thread[i], NULL);
 	
 	storage.finalize(); 		// save to hard-disk of those unsaved data
