@@ -136,6 +136,7 @@ int main(int argc, char ** argv)
         }
 	else 
 	{
+		parameter.number_cluster_node = 1; 
 		parameter.run_id = _run_id;
                 parameter.get_marker = 10000;
                 parameter.put_marker = 10000;
@@ -186,7 +187,7 @@ int main(int argc, char ** argv)
 	}
 
 	/* Initialize Storage  */
-	CStorageHeadPthread storage(parameter.run_id, parameter.get_marker, parameter.put_marker, parameter.number_bins,storage_filename_base,0); 
+	CStorageHeadPthread storage(parameter.run_id, parameter.get_marker, parameter.put_marker, parameter.number_bins,storage_filename_base); 
 	if (if_continue)
 		storage.restore(); 
 	else  
