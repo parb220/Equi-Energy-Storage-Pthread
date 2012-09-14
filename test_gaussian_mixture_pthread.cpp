@@ -133,6 +133,11 @@ int main(int argc, char ** argv)
                 convert << _run_id << ".parameter";
                 file_name = storage_filename_base + convert.str();
                 parameter.LoadParameterFromFile(file_name);
+
+		convert.str(std::string()); 
+		convert << _run_id << ".current_state"; 
+		file_name = storage_filename_base + convert.str(); 
+		parameter.LoadCurrentStateFromFile(file_name); 
         }
 	else 
 	{
@@ -305,6 +310,12 @@ int main(int argc, char ** argv)
         convert << parameter.run_id << ".parameter";
         file_name = storage_filename_base + convert.str();
         parameter.SaveParameterToFile(file_name);
+
+	// save current state into a binary file
+	convert.str(string()); 
+	convert << parameter.run_id << ".current_state"; 
+	file_name = storage_filename_base + convert.str(); 
+	parameter.SaveCurrentStateToFile(file_name); 
 
 	// save parameters into a text file
 	convert.str(std::string());
