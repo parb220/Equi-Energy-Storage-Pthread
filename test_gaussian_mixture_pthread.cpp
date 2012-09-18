@@ -130,12 +130,12 @@ int main(int argc, char ** argv)
         if (if_continue)
         {
                 convert.str(std::string());
-                convert << _run_id << ".parameter";
+                convert << _run_id << "/" << _run_id << ".parameter";
                 file_name = storage_filename_base + convert.str();
                 parameter.LoadParameterFromFile(file_name);
 
 		convert.str(std::string()); 
-		convert << _run_id << ".current_state"; 
+		convert << _run_id << "/" << _run_id << ".current_state"; 
 		file_name = storage_filename_base + convert.str(); 
 		parameter.LoadCurrentStateFromFile(file_name); 
         }
@@ -307,19 +307,19 @@ int main(int argc, char ** argv)
         for (int i=0; i<parameter.number_energy_level; i++)
                 parameter.TraceSimulator(simulator[i]);
         convert.str(std::string());
-        convert << parameter.run_id << ".parameter";
+        convert << parameter.run_id << "/" << parameter.run_id <<".parameter";
         file_name = storage_filename_base + convert.str();
         parameter.SaveParameterToFile(file_name);
 
 	// save current state into a binary file
 	convert.str(string()); 
-	convert << parameter.run_id << ".current_state"; 
+	convert << parameter.run_id << "/" << parameter.run_id << ".current_state"; 
 	file_name = storage_filename_base + convert.str(); 
 	parameter.SaveCurrentStateToFile(file_name); 
 
 	// save parameters into a text file
 	convert.str(std::string());
-        convert << parameter.run_id << ".summary";
+        convert << parameter.run_id << "/" << parameter.run_id << ".summary";
         file_name = storage_filename_base + convert.str();
         parameter.WriteSummaryFile(file_name);
 		
