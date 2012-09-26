@@ -10,8 +10,6 @@ void initialize_simulate(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
         int id = simulator->GetID();
-	CSampleIDWeight mode; 
-	CEES_Pthread::ultimate_target->GetMode(mode); 
 
         /* Wait till the next-level's initial ring is built up */
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
@@ -20,13 +18,22 @@ void initialize_simulate(void *node_void)
 		while (!CEES_Pthread::flag_status(id))
                 	CEES_Pthread::condition_wait(id);
                 CEES_Pthread::mutex_unlock(id);
-		CEES_Pthread::flag_turn(id, false); 
+		CEES_Pthread::flag_turn(id, false);
 		cout << id << " ... Initializing" << endl; 
-                if (!simulator->Initialize() )
-                        simulator->Initialize(mode); 
+                if (!simulator->Initialize() )	// Initialize using a sample drawn from a higher energy level
+		{
+			CSampleIDWeight mode; 
+			simulator->ultimate_target->GetMode(mode, 0); 
+                        simulator->Initialize(mode); // Initialize using a sample directly drawn from target
+		}
         }
         else
-                simulator->Initialize(mode); 
+	{
+		CSampleIDWeight mode;
+                simulator->ultimate_target->GetMode(mode, 0);
+                simulator->Initialize(mode); // Initialize using a sample directly drawn from target
+	}
+
 	// Set up proposal model
 	int dim_cum_sum =0;  
 	double *sigma;
@@ -52,7 +59,7 @@ void initialize_simulate(void *node_void)
 	cout << id << " ... Simulate " << endl; 
 	simulator->Simulate(); 
                 
-	/* Signal the previous level to start */
+	//Signal the previous level to start  
 	if (id > 0)
 	{
         	CEES_Pthread::mutex_lock(id-1);

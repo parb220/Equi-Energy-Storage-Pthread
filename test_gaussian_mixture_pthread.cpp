@@ -202,7 +202,7 @@ int main(int argc, char ** argv)
 	CEES_Pthread::SetEnergyLevelNumber(parameter.number_energy_level); 	// Number of energy levels; 
 	CEES_Pthread::SetEquiEnergyJumpProb(parameter.pee);			// Probability for equal energy jump
 	CEES_Pthread::SetDataDimension(parameter.data_dimension); 		// Data dimension for simulation
-	CEES_Pthread::ultimate_target = &target;	
+	// CEES_Pthread::ultimate_target = &target;	
 	
 	CEES_Pthread::InitializeMinMaxEnergy(parameter.energy_tracking_number);	// For tuning energy levels based on newly identified min_energy 
 	double *temp_buffer_float=new double[parameter.number_energy_level]; 
@@ -226,6 +226,7 @@ int main(int argc, char ** argv)
 	CEES_Pthread *simulator = new CEES_Pthread[parameter.number_energy_level]; 
 	for (int i=0; i<parameter.number_energy_level; i++)
 	{
+		simulator[i].ultimate_target = &target; 
 		simulator[i].SetID_LocalTarget(i);
 		simulator[i].r = r; 	// random number generator  
 		if (i < parameter.number_energy_level-1)
