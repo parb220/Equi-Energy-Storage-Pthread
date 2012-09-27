@@ -10,7 +10,7 @@ void initialize_simulate(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *)node_void;
         int id = simulator->GetID();
-
+	cout << id << " ... Initializing" << endl; 
         /* Wait till the next-level's initial ring is built up */
         if ( id < CEES_Pthread::GetEnergyLevelNumber()-1)
         {
@@ -19,7 +19,6 @@ void initialize_simulate(void *node_void)
                 	CEES_Pthread::condition_wait(id);
                 CEES_Pthread::mutex_unlock(id);
 		CEES_Pthread::flag_turn(id, false);
-		cout << id << " ... Initializing" << endl; 
                 if (!simulator->Initialize() )	// Initialize using a sample drawn from a higher energy level
 		{
 			CSampleIDWeight mode; 
