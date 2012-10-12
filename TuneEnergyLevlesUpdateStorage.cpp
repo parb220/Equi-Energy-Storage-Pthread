@@ -10,7 +10,6 @@ void *adjust_clear(void *node_void)
 {
         CEES_Pthread *simulator = (CEES_Pthread *) node_void;
         simulator->AdjustLocalTarget();
-        simulator->DisregardHistorySamples();
 }
 
 bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, CParameterPackage &parameter)
@@ -60,7 +59,7 @@ bool TuneEnergyLevels_UpdateStorage(CEES_Pthread *simulator, CParameterPackage &
 		for (int i=0; i<CEES_Pthread::K; i++)
 			pthread_join(thread[i], NULL); 
 	
-		// simulator->storage->ClearTemporaryBin(); 
+		simulator->storage->DisregardHistorySamples(); 
 		delete [] thread; 
 		return true; 
 	}
