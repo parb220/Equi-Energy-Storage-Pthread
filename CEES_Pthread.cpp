@@ -6,7 +6,7 @@ vector <pthread_mutex_t> CEES_Pthread::mutex;
 vector < bool> CEES_Pthread::flag; 
 CStorageHeadPthread* CEES_Pthread::storage;
 
-CEES_Pthread::CEES_Pthread(int _id) : CEES_Node(_id)
+CEES_Pthread::CEES_Pthread() : CEES_Node()
 {
 } 
 
